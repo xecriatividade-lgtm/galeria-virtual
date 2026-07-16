@@ -1,0 +1,634 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Galeria Virtual</title>
+<style>
+  :root {
+    --accent: #c9a24b;
+    --panel: rgba(18, 18, 20, 0.82);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #0b0b0d; font-family: "Segoe UI", system-ui, sans-serif; color: #f2efe9; }
+  #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+
+  /* ---- Tela inicial ---- */
+  #start {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    background: radial-gradient(ellipse at center, rgba(20,20,24,0.72), rgba(6,6,8,0.94));
+    backdrop-filter: blur(2px);
+    transition: opacity .5s ease;
+  }
+  #start.hidden { opacity: 0; pointer-events: none; }
+  #start h1 { font-weight: 300; letter-spacing: .28em; font-size: clamp(22px, 4vw, 40px); text-transform: uppercase; }
+  #start .sub { margin-top: 10px; color: #b7b2a8; font-size: 14px; letter-spacing: .05em; }
+  #enter {
+    margin-top: 34px; padding: 16px 42px; border: 1px solid var(--accent);
+    background: transparent; color: var(--accent); font-size: 16px; letter-spacing: .18em;
+    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all .25s ease;
+  }
+  #enter:hover { background: var(--accent); color: #14110a; }
+  #help { margin-top: 26px; color: #8a8579; font-size: 12.5px; line-height: 1.9; letter-spacing: .04em; }
+  #help b { color: #d8d2c4; font-weight: 600; }
+
+  /* ---- HUD ---- */
+  #hud { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+  #topbar {
+    position: absolute; top: 0; left: 0; right: 0; height: 56px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 18px;
+    background: linear-gradient(rgba(0,0,0,.45), transparent); pointer-events: none;
+  }
+  #gname { font-weight: 300; letter-spacing: .22em; text-transform: uppercase; font-size: 15px; color: #ece7dc; }
+  #gname span { color: var(--accent); }
+  #addBtn {
+    pointer-events: auto; display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 15px; border: 1px solid rgba(201,162,75,.6); border-radius: 3px;
+    background: var(--panel); color: var(--accent); font-size: 13px; letter-spacing: .06em; cursor: pointer;
+  }
+  #addBtn:hover { background: rgba(201,162,75,.16); }
+
+  #crosshair {
+    position: fixed; top: 50%; left: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+    border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 0 0 1px rgba(0,0,0,.4);
+    z-index: 15; opacity: 0; transition: opacity .2s; pointer-events: none;
+  }
+  #crosshair.on { opacity: 1; }
+
+  /* ---- Placa de obra em foco ---- */
+  #plate {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+    z-index: 22; min-width: 240px; max-width: min(90vw, 460px); padding: 16px 22px;
+    background: var(--panel); border: 1px solid rgba(255,255,255,.08); border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5); opacity: 0; pointer-events: none;
+    transition: opacity .3s, transform .3s; text-align: center;
+  }
+  #plate.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #plate .t { font-size: 18px; font-weight: 500; letter-spacing: .02em; }
+  #plate .m { margin-top: 6px; font-size: 13px; color: #b7b2a8; }
+  #plate .hint { margin-top: 12px; font-size: 11.5px; color: #7d786d; letter-spacing: .08em; text-transform: uppercase; }
+
+  /* ---- Controles de toque (mobile) ---- */
+  #touch { position: fixed; inset: 0; z-index: 18; display: none; pointer-events: none; }
+  #touch.on { display: block; }
+  #stick {
+    position: absolute; left: 26px; bottom: 30px; width: 118px; height: 118px; border-radius: 50%;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.18); pointer-events: auto;
+  }
+  #knob {
+    position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px;
+    border-radius: 50%; background: rgba(201,162,75,.75); box-shadow: 0 2px 10px rgba(0,0,0,.4);
+  }
+  #lookHint { position: absolute; right: 24px; bottom: 44px; color: #9a958a; font-size: 12px; pointer-events: none; }
+
+  #toast {
+    position: fixed; top: 68px; left: 50%; transform: translateX(-50%); z-index: 30;
+    background: var(--panel); color: #ece7dc; padding: 10px 18px; border-radius: 20px; font-size: 13px;
+    border: 1px solid rgba(255,255,255,.1); opacity: 0; transition: opacity .3s; pointer-events: none;
+  }
+  #toast.on { opacity: 1; }
+</style>
+
+<canvas id="scene"></canvas>
+
+<div id="hud">
+  <div id="topbar">
+    <div id="gname">Galeria <span>Virtual</span></div>
+    <button id="addBtn">＋ Adicionar obra</button>
+  </div>
+</div>
+<div id="crosshair"></div>
+
+<div id="plate">
+  <div class="t">—</div>
+  <div class="m">—</div>
+  <div class="hint">clique para aproximar</div>
+</div>
+
+<div id="touch">
+  <div id="stick"><div id="knob"></div></div>
+  <div id="lookHint">arraste aqui →<br>para olhar</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="start">
+  <h1>Galeria Virtual</h1>
+  <div class="sub">Uma exposição imersiva das suas obras</div>
+  <button id="enter">Entrar na galeria</button>
+  <div id="help" data-desktop>
+    <b>W A S D</b> ou setas — caminhar &nbsp;·&nbsp; <b>Mouse</b> — olhar em volta<br>
+    <b>Clique</b> numa obra — aproximar &nbsp;·&nbsp; <b>ESC</b> — liberar o cursor
+  </div>
+</div>
+
+<input id="fileInput" type="file" accept="image/*" multiple style="display:none" />
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ---------------------------------------------------------------------------
+//  Renderer / Scene / Camera
+// ---------------------------------------------------------------------------
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xeae7df);
+
+const camera = new THREE.PerspectiveCamera(66, 1, 0.05, 120);
+// Sizing is driven by CSS + a per-frame check (the preview can start at 0×0).
+const DPR = Math.min(devicePixelRatio, 2);
+function resizeToDisplay() {
+  const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
+  const pw = Math.floor(w * DPR), ph = Math.floor(h * DPR);
+  if (canvas.width !== pw || canvas.height !== ph) {
+    renderer.setSize(pw, ph, false);       // false → don't touch inline style
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+}
+const EYE = 1.62;
+camera.rotation.order = 'YXZ';
+
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+
+// ---------------------------------------------------------------------------
+//  Room dimensions
+// ---------------------------------------------------------------------------
+const RW = 24, RD = 16, RH = 6.5;            // width (x), depth (z), height (y)
+const HX = RW / 2, HZ = RD / 2;
+
+// ---------------------------------------------------------------------------
+//  Procedural textures (canvas)
+// ---------------------------------------------------------------------------
+function makeWoodTexture() {
+  // Carvalho claro em tábuas escalonadas (juntas topo desencontradas, como na referência).
+  const c = document.createElement('canvas'); c.width = c.height = 1024;
+  const x = c.getContext('2d');
+  const cols = 8, cw = c.width / cols, segH = 512;   // largura da tábua / comprimento do segmento
+  for (let ci = 0; ci < cols; ci++) {
+    const off = (ci % 2) * (segH / 2);               // junta escalonada meia-tábua
+    for (let y = -segH + off; y < c.height; y += segH) {
+      const tone = 204 + Math.floor(((ci * 29 + (y + 2048) / segH * 13) % 30));
+      x.fillStyle = `rgb(${tone},${tone - 26},${tone - 64})`;
+      x.fillRect(ci * cw, y, cw, segH);
+      for (let g = 0; g < 14; g++) {                 // veios longitudinais
+        x.strokeStyle = `rgba(120,86,50,${0.03 + Math.random() * 0.05})`; x.lineWidth = 1;
+        const gx = ci * cw + Math.random() * cw;
+        x.beginPath(); x.moveTo(gx, y); x.lineTo(gx + (Math.random() * 3 - 1.5), y + segH); x.stroke();
+      }
+      x.strokeStyle = 'rgba(70,46,24,0.42)'; x.lineWidth = 2;   // junta de topo
+      x.beginPath(); x.moveTo(ci * cw, y); x.lineTo(ci * cw + cw, y); x.stroke();
+    }
+    x.strokeStyle = 'rgba(80,54,28,0.5)'; x.lineWidth = 2;      // fresta lateral
+    x.beginPath(); x.moveTo(ci * cw, 0); x.lineTo(ci * cw, c.height); x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 5);
+  t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function makeCeilingGrid(nx, ny) {
+  // Teto luminoso: grade em dois níveis (quadradinhos finos + linhas fortes cada 6).
+  const c = document.createElement('canvas'); c.width = c.height = 1024;
+  const x = c.getContext('2d');
+  x.fillStyle = '#fcfcf7'; x.fillRect(0, 0, 1024, 1024);
+  const sx = 1024 / nx, sy = 1024 / ny;
+  x.strokeStyle = 'rgba(176,152,104,0.32)'; x.lineWidth = 1.5;   // grade fina
+  for (let i = 0; i <= nx; i++) { x.beginPath(); x.moveTo(i * sx, 0); x.lineTo(i * sx, 1024); x.stroke(); }
+  for (let j = 0; j <= ny; j++) { x.beginPath(); x.moveTo(0, j * sy); x.lineTo(1024, j * sy); x.stroke(); }
+  x.strokeStyle = 'rgba(166,140,90,0.7)'; x.lineWidth = 3.5;     // linhas fortes
+  for (let i = 0; i <= nx; i += 6) { x.beginPath(); x.moveTo(i * sx, 0); x.lineTo(i * sx, 1024); x.stroke(); }
+  for (let j = 0; j <= ny; j += 6) { x.beginPath(); x.moveTo(0, j * sy); x.lineTo(1024, j * sy); x.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+const PALETTES = [
+  ['#efe1c4', '#c85a3c', '#2f5d7c'], ['#e3ead8', '#3f7d54', '#c69235'],
+  ['#efe3cf', '#864f92', '#d7a93e'], ['#f2ddc4', '#b23a30', '#33553a'],
+  ['#dde9f0', '#3a6ea5', '#e2b84e'], ['#ece5d8', '#c06a34', '#546b8a'],
+];
+function makePlaceholderArt(seed) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 640;
+  const x = c.getContext('2d'); const p = PALETTES[seed % PALETTES.length];
+  // fundo claro
+  const g = x.createLinearGradient(0, 0, 0, 640);
+  g.addColorStop(0, '#f6efe0'); g.addColorStop(1, p[0]); x.fillStyle = g; x.fillRect(0, 0, 512, 640);
+  // formas vívidas sobrepostas
+  for (let i = 0; i < 7; i++) {
+    x.globalAlpha = 0.55 + (i % 2) * 0.25; x.fillStyle = (i % 2) ? p[1] : p[2];
+    const s = 70 + ((seed * 37 + i * 53) % 190);
+    x.beginPath();
+    x.ellipse(70 + ((seed * 91 + i * 130) % 380), 90 + ((seed * 57 + i * 170) % 470), s, s * 0.72, i * 1.1, 0, 7); x.fill();
+  }
+  x.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return { texture: t, aspect: 512 / 640 };
+}
+
+function makePlaqueTexture(title, meta) {
+  const c = document.createElement('canvas'); c.width = 640; c.height = 200;
+  const x = c.getContext('2d');
+  x.fillStyle = '#efe9dd'; x.fillRect(0, 0, 640, 200);
+  x.fillStyle = '#1c1a17'; x.font = '600 40px Georgia, serif'; x.textAlign = 'center';
+  x.fillText(clip(title, 26), 320, 80);
+  x.fillStyle = '#5a544a'; x.font = 'italic 28px Georgia, serif';
+  x.fillText(clip(meta, 40), 320, 132);
+  x.strokeStyle = '#c9a24b'; x.lineWidth = 4; x.strokeRect(6, 6, 628, 188);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+function clip(s, n) { s = s || ''; return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+// ---------------------------------------------------------------------------
+//  Build the room
+// ---------------------------------------------------------------------------
+const wallMat = new THREE.MeshStandardMaterial({ color: 0xfcfbf7, roughness: 0.97, metalness: 0 });
+const woodMat = new THREE.MeshStandardMaterial({ map: makeWoodTexture(), roughness: 0.55, metalness: 0.02 });
+const benchMat = new THREE.MeshStandardMaterial({ color: 0xcdac78, roughness: 0.5, metalness: 0.02 });
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD), woodMat);
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+// Teto luminoso (grade) com borda branca em volta — principal fonte de luz visual
+const ceilBase = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD),
+  new THREE.MeshBasicMaterial({ color: 0xffffff }));
+ceilBase.rotation.x = Math.PI / 2; ceilBase.position.y = RH; scene.add(ceilBase);
+const ceilGrid = new THREE.Mesh(new THREE.PlaneGeometry(RW - 1.8, RD - 1.8),
+  new THREE.MeshBasicMaterial({ map: makeCeilingGrid(28, 18) }));
+ceilGrid.rotation.x = Math.PI / 2; ceilGrid.position.y = RH - 0.03; scene.add(ceilGrid);
+
+function wall(w, h, x, y, z, ry) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
+  m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; scene.add(m);
+}
+wall(RW, RH, 0, RH / 2, -HZ, 0);            // far  (normal +z)
+wall(RW, RH, 0, RH / 2, HZ, Math.PI);       // near (normal -z)
+wall(RD, RH, -HX, RH / 2, 0, Math.PI / 2);  // left (normal +x)
+wall(RD, RH, HX, RH / 2, 0, -Math.PI / 2);  // right(normal -x)
+
+// --- Bancos de madeira maciça, longos e baixos (como na referência) ---
+function bench(x, z, len) {
+  const b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, len), benchMat);
+  b.position.set(x, 0.2, z); b.castShadow = true; b.receiveShadow = true; scene.add(b);
+}
+bench(-2.2, 3.0, 3.2);
+bench(1.2, 0.4, 3.2);
+
+// --- Porta escura para uma sala adjacente (parede esquerda) ---
+(function doorway() {
+  const dw = 1.3, dh = 2.5, dz = -5.2;
+  // vão escuro
+  const opening = new THREE.Mesh(new THREE.PlaneGeometry(dw, dh),
+    new THREE.MeshBasicMaterial({ color: 0x232a30 }));
+  opening.position.set(-HX + 0.02, dh / 2, dz); opening.rotation.y = Math.PI / 2; scene.add(opening);
+  // profundidade falsa (parede do fundo da sala vizinha, mais escura)
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(1.6, dh),
+    new THREE.MeshStandardMaterial({ color: 0x2b333b, roughness: 1 }));
+  back.position.set(-HX - 1.3, dh / 2, dz); back.rotation.y = Math.PI / 2; scene.add(back);
+  const side = new THREE.Mesh(new THREE.PlaneGeometry(1.35, dh),
+    new THREE.MeshStandardMaterial({ color: 0x1d2429, roughness: 1 }));
+  side.position.set(-HX - 0.65, dh / 2, dz - dw / 2); scene.add(side);
+})();
+
+// ---------------------------------------------------------------------------
+//  Lighting
+// ---------------------------------------------------------------------------
+// Luz difusa e uniforme, como vinda de um teto de vidro (white cube).
+scene.add(new THREE.HemisphereLight(0xffffff, 0xeae6dc, 1.5));
+scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+// leve direcional do alto só para dar sombra suave nos bancos
+const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+sun.position.set(3, RH + 4, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -HX; sun.shadow.camera.right = HX;
+sun.shadow.camera.top = HZ; sun.shadow.camera.bottom = -HZ;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = RH + 12; sun.shadow.bias = -0.0005;
+scene.add(sun);
+
+// ---------------------------------------------------------------------------
+//  Slots (anchor points on walls)
+// ---------------------------------------------------------------------------
+const CY = 1.72;                             // centro vertical das obras (nível do olhar)
+const SLOTS = [];
+for (const z of [-1.75, 1.75, 5.2]) SLOTS.push({ pos: new THREE.Vector3(-HX + 0.08, CY, z), ry: Math.PI / 2, n: new THREE.Vector3(1, 0, 0), maxW: 2.6, maxH: 2.1 });
+for (const z of [-5.2, -1.75, 1.75, 5.2]) SLOTS.push({ pos: new THREE.Vector3(HX - 0.08, CY, z), ry: -Math.PI / 2, n: new THREE.Vector3(-1, 0, 0), maxW: 2.6, maxH: 2.1 });
+for (const x of [-6.5, 0, 6.5]) SLOTS.push({ pos: new THREE.Vector3(x, CY, -HZ + 0.08), ry: 0, n: new THREE.Vector3(0, 0, 1), maxW: 3.0, maxH: 2.3 });
+
+const frameMat = new THREE.MeshStandardMaterial({ color: 0x1c1a17, roughness: 0.6, metalness: 0.1 });
+const goldMat = new THREE.MeshStandardMaterial({ color: 0xb98f3e, roughness: 0.4, metalness: 0.6 });
+
+const artworks = [];          // { group, slot, mesh, meta }
+const raycastTargets = [];
+
+function fitSize(aspect, slot) {
+  let h = slot.maxH, w = h * aspect;
+  if (w > slot.maxW) { w = slot.maxW; h = w / aspect; }
+  return { w, h };
+}
+
+function buildArtwork(slotIndex, texture, aspect, title, meta) {
+  const slot = SLOTS[slotIndex];
+  // remove antigo
+  const old = artworks[slotIndex];
+  if (old) { scene.remove(old.group); const i = raycastTargets.indexOf(old.mesh); if (i >= 0) raycastTargets.splice(i, 1); }
+
+  const { w, h } = fitSize(aspect, slot);
+  const g = new THREE.Group();
+  g.position.copy(slot.pos); g.rotation.y = slot.ry;
+
+  // moldura fina dourada
+  const outer = new THREE.Mesh(new THREE.BoxGeometry(w + 0.13, h + 0.13, 0.06), goldMat);
+  outer.position.z = -0.02; outer.castShadow = true; g.add(outer);
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(w + 0.03, h + 0.03, 0.07), frameMat);
+  inner.position.z = -0.01; g.add(inner);
+
+  const art = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6, metalness: 0 }));
+  art.position.z = 0.025; art.userData.slotIndex = slotIndex; g.add(art);
+  raycastTargets.push(art);
+
+  // placa
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.156),
+    new THREE.MeshStandardMaterial({ map: makePlaqueTexture(title, meta), roughness: 0.9 }));
+  plaque.position.set(w / 2 - 0.25, -h / 2 - 0.34, 0.02); g.add(plaque);
+
+  scene.add(g);
+  artworks[slotIndex] = { group: g, slot, mesh: art,
+    meta: { title, meta, center: slot.pos.clone(), n: slot.n.clone() } };
+}
+
+// preenche com obras de exemplo
+for (let i = 0; i < SLOTS.length; i++) {
+  const { texture, aspect } = makePlaceholderArt(i);
+  buildArtwork(i, texture, aspect, `Obra ${i + 1}`, 'Adicione sua foto');
+}
+
+// ---------------------------------------------------------------------------
+//  First-person controls
+// ---------------------------------------------------------------------------
+camera.position.set(0, EYE, HZ - 1.5);
+let yaw = 0, pitch = 0;
+const keys = {};
+const move = new THREE.Vector2();      // x = strafe, y = forward
+let locked = false, active = false;
+
+// --- foco em obra ---
+let focus = null;   // { pos, yaw, pitch, t }
+function focusArtwork(a) {
+  const size = fitSize(a.mesh.geometry.parameters.width / a.mesh.geometry.parameters.height, a.slot);
+  const d = Math.max(2.2, size.w * 1.15, size.h * 1.0);
+  const target = a.meta.center.clone().addScaledVector(a.meta.n, d); target.y = EYE;
+  const fwd = a.meta.center.clone().sub(target).normalize();
+  focus = { pos: target, yaw: Math.atan2(-fwd.x, -fwd.z), pitch: Math.asin(THREE.MathUtils.clamp(fwd.y, -1, 1)), t: 0 };
+  showPlate(a.meta.title, a.meta.meta);
+}
+function cancelFocus() { if (focus) { focus = null; hidePlate(); } }
+
+// --- look ---
+function applyLook(dx, dy) {
+  yaw -= dx * 0.0024; pitch -= dy * 0.0024;
+  pitch = THREE.MathUtils.clamp(pitch, -1.2, 1.2);
+  cancelFocus();
+}
+
+// Desktop pointer lock
+if (!isTouch) {
+  document.addEventListener('mousemove', e => { if (locked) applyLook(e.movementX, e.movementY); });
+  document.addEventListener('pointerlockchange', () => {
+    locked = document.pointerLockElement === document.body;
+    document.getElementById('crosshair').classList.toggle('on', locked);
+  });
+  document.addEventListener('click', e => {
+    if (!active) return;
+    if (!locked) { document.body.requestPointerLock(); return; }
+    // raycast do centro
+    const hit = raycastCenter();
+    if (hit) focusArtwork(artworks[hit.object.userData.slotIndex]);
+    else cancelFocus();
+  });
+  addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') cancelFocus(); });
+  addEventListener('keyup', e => { keys[e.code] = false; });
+}
+
+// Touch controls
+if (isTouch) {
+  const stick = document.getElementById('stick'), knob = document.getElementById('knob');
+  let stickId = null, cx = 0, cy = 0;
+  const R = 44;
+  stick.addEventListener('touchstart', e => {
+    const t = e.changedTouches[0]; stickId = t.identifier;
+    const r = stick.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+    e.preventDefault();
+  }, { passive: false });
+  addEventListener('touchmove', e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === stickId) {
+        let dx = t.clientX - cx, dy = t.clientY - cy;
+        const len = Math.hypot(dx, dy) || 1; const cl = Math.min(len, R);
+        dx = dx / len * cl; dy = dy / len * cl;
+        knob.style.transform = `translate(${dx}px,${dy}px)`;
+        move.set(dx / R, -dy / R);
+      } else if (t.identifier === lookId) {
+        applyLook(t.clientX - lx, t.clientY - ly); lx = t.clientX; ly = t.clientY;
+      }
+    }
+  }, { passive: false });
+  let lookId = null, lx = 0, ly = 0;
+  addEventListener('touchstart', e => {
+    for (const t of e.changedTouches) {
+      if (t.target === stick || t.target === knob) continue;
+      if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY;
+        // tap curto = tentar focar
+        t._t0 = performance.now && 0; }
+    }
+  });
+  addEventListener('touchend', e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === stickId) { stickId = null; knob.style.transform = ''; move.set(0, 0); }
+      if (t.identifier === lookId) {
+        lookId = null;
+        const hit = raycastAt(t.clientX, t.clientY);
+        if (hit) focusArtwork(artworks[hit.object.userData.slotIndex]);
+      }
+    }
+  });
+}
+
+const raycaster = new THREE.Raycaster();
+function raycastCenter() {
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+  const h = raycaster.intersectObjects(raycastTargets, false);
+  return h.length && h[0].distance < 30 ? h[0] : null;
+}
+function raycastAt(cxp, cyp) {
+  const v = new THREE.Vector2((cxp / innerWidth) * 2 - 1, -(cyp / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(v, camera);
+  const h = raycaster.intersectObjects(raycastTargets, false);
+  return h.length && h[0].distance < 40 ? h[0] : null;
+}
+
+// ---------------------------------------------------------------------------
+//  UI plate / toast
+// ---------------------------------------------------------------------------
+const plate = document.getElementById('plate');
+function showPlate(t, m) {
+  plate.querySelector('.t').textContent = t;
+  plate.querySelector('.m').textContent = m;
+  plate.classList.add('on');
+}
+function hidePlate() { plate.classList.remove('on'); }
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2600);
+}
+
+// hover plate (desktop)
+let lastHover = -1;
+function updateHover() {
+  if (isTouch || focus) return;
+  const hit = raycastCenter();
+  const idx = hit ? hit.object.userData.slotIndex : -1;
+  if (idx !== lastHover) {
+    lastHover = idx;
+    if (idx >= 0) showPlate(artworks[idx].meta.title, artworks[idx].meta.meta);
+    else hidePlate();
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  Upload de obras
+// ---------------------------------------------------------------------------
+const fileInput = document.getElementById('fileInput');
+let nextSlot = 0;
+document.getElementById('addBtn').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => loadFiles(e.target.files));
+addEventListener('dragover', e => e.preventDefault());
+addEventListener('drop', e => { e.preventDefault(); loadFiles(e.dataTransfer.files); });
+
+function loadFiles(files) {
+  const imgs = [...files].filter(f => f.type.startsWith('image/'));
+  if (!imgs.length) return;
+  for (const f of imgs) {
+    if (nextSlot >= SLOTS.length) { toast('Galeria cheia — todas as paredes ocupadas'); break; }
+    const slotIndex = nextSlot++;
+    const url = URL.createObjectURL(f);
+    new THREE.TextureLoader().load(url, tex => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const asp = tex.image.width / tex.image.height;
+      buildArtwork(slotIndex, tex, asp, f.name.replace(/\.[^.]+$/, ''), 'Sua obra');
+    });
+  }
+  toast(`${imgs.length} obra(s) adicionada(s)`);
+}
+
+// ---------------------------------------------------------------------------
+//  Start
+// ---------------------------------------------------------------------------
+const startEl = document.getElementById('start');
+document.getElementById('enter').addEventListener('click', () => {
+  startEl.classList.add('hidden'); active = true;
+  if (isTouch) document.getElementById('touch').classList.add('on');
+  else document.body.requestPointerLock();
+});
+if (isTouch) document.querySelector('#help').innerHTML =
+  '<b>Joystick</b> (esquerda) — caminhar &nbsp;·&nbsp; <b>Arraste</b> (direita) — olhar<br><b>Toque</b> numa obra — aproximar';
+
+// ---------------------------------------------------------------------------
+//  Loop
+// ---------------------------------------------------------------------------
+const clock = new THREE.Clock();
+const fwdV = new THREE.Vector3(), rightV = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+const SPEED = 3.2;
+
+function animate() {
+  // rAF congela em abas ocultas; cai para timer para não travar o render
+  if (document.hidden) setTimeout(animate, 33); else requestAnimationFrame(animate);
+  resizeToDisplay();
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (focus) {
+    focus.t = Math.min(1, focus.t + dt * 1.8);
+    const e = 1 - Math.pow(1 - focus.t, 3);
+    camera.position.lerp(focus.pos, e * 0.25 + (focus.t >= 1 ? 0.15 : 0));
+    yaw += (focus.yaw - yaw) * (e * 0.25);
+    pitch += (focus.pitch - pitch) * (e * 0.25);
+  } else if (active) {
+    // input teclado
+    let f = 0, s = 0;
+    if (keys['KeyW'] || keys['ArrowUp']) f += 1;
+    if (keys['KeyS'] || keys['ArrowDown']) f -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) s += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) s -= 1;
+    if (isTouch) { s += move.x; f += move.y; }
+
+    if (f || s) {
+      camera.getWorldDirection(fwdV); fwdV.y = 0; fwdV.normalize();
+      rightV.crossVectors(fwdV, up).normalize();
+      const mv = new THREE.Vector3().addScaledVector(fwdV, f).addScaledVector(rightV, s);
+      if (mv.lengthSq() > 0) mv.normalize().multiplyScalar(SPEED * dt);
+      camera.position.add(mv);
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -HX + 0.8, HX - 0.8);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -HZ + 0.8, HZ - 0.8);
+      camera.position.y = EYE;
+    }
+  }
+
+  camera.rotation.set(pitch, yaw, 0);
+  updateHover();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener('resize', resizeToDisplay);
+
+// Debug hooks (usados para verificação automática; inofensivos)
+window.__gallery = {
+  enter() { startEl.classList.add('hidden'); active = true; if (isTouch) document.getElementById('touch').classList.add('on'); },
+  focus(i) { if (artworks[i]) focusArtwork(artworks[i]); },
+  step(f, s) { move.set(s || 0, f || 0); },
+  pose() { return { x: +camera.position.x.toFixed(2), z: +camera.position.z.toFixed(2), yaw: +yaw.toFixed(2), focusing: !!focus }; },
+  // renderiza offscreen (preserveDrawingBuffer) e amostra cores — para verificação headless
+  sample(points, w = 480, h = 270) {
+    const r = new THREE.WebGLRenderer({ preserveDrawingBuffer: true, antialias: true });
+    r.setSize(w, h, false); r.outputColorSpace = THREE.SRGBColorSpace;
+    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15; r.shadowMap.enabled = true;
+    const cam = camera.clone(); cam.aspect = w / h; cam.updateProjectionMatrix();
+    r.render(scene, cam);
+    const gl = r.getContext(), out = {};
+    for (const [name, ux, uy] of points) {
+      const px = new Uint8Array(4);
+      gl.readPixels(Math.floor(ux * w), Math.floor(uy * h), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      out[name] = [px[0], px[1], px[2]];
+    }
+    r.dispose(); r.forceContextLoss();
+    return out;
+  },
+  shot(w = 860, h = 500, q = 0.82) {
+    const r = new THREE.WebGLRenderer({ preserveDrawingBuffer: true, antialias: true });
+    r.setSize(w, h, false); r.outputColorSpace = THREE.SRGBColorSpace;
+    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15;
+    r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+    const cam = camera.clone(); cam.aspect = w / h; cam.updateProjectionMatrix();
+    r.render(scene, cam);
+    const url = r.domElement.toDataURL('image/jpeg', q);
+    r.dispose(); r.forceContextLoss();
+    return url;
+  },
+};
+</script>
