@@ -1,3 +1,5 @@
-# Galeria Virtual
+# Museu XE — Galeria Virtual
 
-Galeria imersiva em primeira pessoa (Three.js). Abra o link do GitHub Pages e clique em "Entrar na galeria".
+Exposição virtual em 3D: caminhe pelo museu, clique nas obras para ver a ficha técnica, ampliar e solicitar a compra.
+
+Para editar títulos, medidas, conceitos, preços e contatos, altere `obras.json`.

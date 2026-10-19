@@ -1,0 +1,22 @@
+{
+  "_ajuda": "Edite este arquivo para mudar textos, valores e contatos. Medidas em centímetros (as atuais são ESTIMATIVAS pela proporção da foto — troque pelas reais; o tamanho na parede 3D usa estes números). preco: texto livre, ex. \"R$ 4.800\" ou \"Sob consulta\". status: \"disponivel\" ou \"vendida\". recorte: true remove o fundo branco em volta de obras de formato irregular. parede: onde a obra fica (veja PAREDES no index.html).",
+  "galeria": {
+    "nome": "Museu XE",
+    "subtitulo": "Exposição virtual de pinturas",
+    "artista": "XE",
+    "whatsapp": "",
+    "email": "xecriatividade@gmail.com"
+  },
+  "obras": [
+    { "id": "obra-04", "arquivo": "obras/obra-04.jpg", "titulo": "Sem título 04", "ano": "", "tecnica": "Técnica mista e spray sobre madeira (assemblage)", "largura_cm": 110, "altura_cm": 103, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "recorte": true, "parede": "leste", "pos": -7.5 },
+    { "id": "obra-05", "arquivo": "obras/obra-05.jpg", "titulo": "Sem título 05", "ano": "", "tecnica": "Acrílica e spray sobre tela", "largura_cm": 100, "altura_cm": 114, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "leste", "pos": -2.0 },
+    { "id": "obra-01", "arquivo": "obras/obra-01.jpg", "titulo": "Sem título 01", "ano": "", "tecnica": "Acrílica e spray sobre madeira", "largura_cm": 90, "altura_cm": 120, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "fundo", "pos": 5.0 },
+    { "id": "obra-02", "arquivo": "obras/obra-02.jpg", "titulo": "Sem título 02", "ano": "", "tecnica": "Spray e técnica mista sobre porta de madeira", "largura_cm": 80, "altura_cm": 115, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "recorte": true, "parede": "fundo", "pos": 0.5 },
+    { "id": "obra-03", "arquivo": "obras/obra-03.jpg", "titulo": "Sem título 03", "ano": "", "tecnica": "Spray e técnica mista sobre porta de madeira", "largura_cm": 80, "altura_cm": 115, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "fundo", "pos": -4.0 },
+    { "id": "obra-07", "arquivo": "obras/obra-07.jpg", "titulo": "Sem título 07", "ano": "", "tecnica": "Acrílica e spray sobre compensado", "largura_cm": 60, "altura_cm": 120, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "fundo", "pos": -11.0 },
+    { "id": "obra-08", "arquivo": "obras/obra-08.jpg", "titulo": "Sem título 08", "ano": "", "tecnica": "Acrílica e spray sobre compensado", "largura_cm": 60, "altura_cm": 120, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "fundo", "pos": -14.5 },
+    { "id": "obra-09", "arquivo": "obras/obra-09.jpg", "titulo": "Sem título 09", "ano": "", "tecnica": "Acrílica e spray sobre compensado", "largura_cm": 60, "altura_cm": 120, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "fundo", "pos": -18.0 },
+    { "id": "obra-10", "arquivo": "obras/obra-10.jpg", "titulo": "Sem título 10", "ano": "", "tecnica": "Acrílica e spray sobre compensado", "largura_cm": 60, "altura_cm": 120, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "fundo", "pos": -21.5 },
+    { "id": "obra-06", "arquivo": "obras/obra-06.jpg", "titulo": "Sem título 06", "ano": "", "tecnica": "Acrílica, spray e colagem sobre madeira", "largura_cm": 70, "altura_cm": 125, "conceito": "Escreva aqui o conceito da obra.", "preco": "Sob consulta", "status": "disponivel", "parede": "fundo", "pos": -30.0 }
+  ]
+}

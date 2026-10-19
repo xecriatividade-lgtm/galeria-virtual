@@ -1,127 +1,245 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Galeria Virtual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --accent: #c9a24b;
-    --panel: rgba(18, 18, 20, 0.82);
+    --ink: #1b1a17;
+    --muted: #6d675c;
+    --paper: #f7f4ee;
+    --line: rgba(27,26,23,.12);
+    --accent: #a3392b;
+    --glass: rgba(250,248,243,.94);
+    --serif: "Cormorant Garamond", Georgia, serif;
+    --sans: "Inter", "Segoe UI", system-ui, sans-serif;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; overflow: hidden; background: #0b0b0d; font-family: "Segoe UI", system-ui, sans-serif; color: #f2efe9; }
-  #scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+  html, body { height: 100%; overflow: hidden; background: #e9e6df; font-family: var(--sans); color: var(--ink); -webkit-tap-highlight-color: transparent; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+  #scene.drag { cursor: grabbing; }
+  #scene.art { cursor: zoom-in; }
+  #scene.walk { cursor: pointer; }
 
-  /* ---- Tela inicial ---- */
+  /* ---------- Tela de abertura ---------- */
   #start {
-    position: fixed; inset: 0; z-index: 50;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 24px;
-    background: radial-gradient(ellipse at center, rgba(20,20,24,0.72), rgba(6,6,8,0.94));
-    backdrop-filter: blur(2px);
-    transition: opacity .5s ease;
+    position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 24px;
+    background: rgba(247,244,238,.86); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    transition: opacity .6s ease;
   }
   #start.hidden { opacity: 0; pointer-events: none; }
-  #start h1 { font-weight: 300; letter-spacing: .28em; font-size: clamp(22px, 4vw, 40px); text-transform: uppercase; }
-  #start .sub { margin-top: 10px; color: #b7b2a8; font-size: 14px; letter-spacing: .05em; }
+  #start .kicker { font-size: 12px; letter-spacing: .32em; text-transform: uppercase; color: var(--muted); }
+  #start h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(44px, 8vw, 86px); line-height: 1; margin: 14px 0 10px; }
+  #start .sub { font-family: var(--serif); font-style: italic; font-size: clamp(18px, 2.4vw, 24px); color: var(--muted); }
   #enter {
-    margin-top: 34px; padding: 16px 42px; border: 1px solid var(--accent);
-    background: transparent; color: var(--accent); font-size: 16px; letter-spacing: .18em;
-    text-transform: uppercase; cursor: pointer; border-radius: 2px; transition: all .25s ease;
+    margin-top: 38px; padding: 15px 40px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    font-size: 13px; letter-spacing: .2em; text-transform: uppercase; border-radius: 999px; transition: all .25s;
   }
-  #enter:hover { background: var(--accent); color: #14110a; }
-  #help { margin-top: 26px; color: #8a8579; font-size: 12.5px; line-height: 1.9; letter-spacing: .04em; }
-  #help b { color: #d8d2c4; font-weight: 600; }
+  #enter:disabled { opacity: .35; cursor: progress; }
+  #enter:not(:disabled):hover { background: transparent; color: var(--ink); }
+  #progress { margin-top: 18px; width: 220px; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  #progress i { display: block; height: 100%; width: 0; background: var(--ink); transition: width .2s; }
+  #help { margin-top: 26px; font-size: 12.5px; color: var(--muted); line-height: 1.9; }
+  #help b { color: var(--ink); font-weight: 500; }
 
-  /* ---- HUD ---- */
-  #hud { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+  /* ---------- Barra superior ---------- */
   #topbar {
-    position: absolute; top: 0; left: 0; right: 0; height: 56px;
-    display: flex; align-items: center; justify-content: space-between; padding: 0 18px;
-    background: linear-gradient(rgba(0,0,0,.45), transparent); pointer-events: none;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: 60px; padding: 0 18px;
+    display: flex; align-items: center; justify-content: space-between; pointer-events: none;
   }
-  #gname { font-weight: 300; letter-spacing: .22em; text-transform: uppercase; font-size: 15px; color: #ece7dc; }
-  #gname span { color: var(--accent); }
-  #addBtn {
-    pointer-events: auto; display: inline-flex; align-items: center; gap: 8px;
-    padding: 9px 15px; border: 1px solid rgba(201,162,75,.6); border-radius: 3px;
-    background: var(--panel); color: var(--accent); font-size: 13px; letter-spacing: .06em; cursor: pointer;
+  #brand { font-family: var(--serif); font-size: 24px; pointer-events: auto; background: var(--glass); padding: 5px 16px; border-radius: 999px; box-shadow: 0 2px 14px rgba(0,0,0,.08); }
+  .pill {
+    pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px;
+    background: var(--glass); border: 1px solid var(--line); border-radius: 999px; font-size: 13px;
+    box-shadow: 0 2px 14px rgba(0,0,0,.08); transition: background .2s;
   }
-  #addBtn:hover { background: rgba(201,162,75,.16); }
+  .pill:hover { background: #fff; }
 
-  #crosshair {
-    position: fixed; top: 50%; left: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px;
-    border-radius: 50%; background: rgba(255,255,255,.55); box-shadow: 0 0 0 1px rgba(0,0,0,.4);
-    z-index: 15; opacity: 0; transition: opacity .2s; pointer-events: none;
+  /* ---------- Navegação entre obras ---------- */
+  #tour {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 20;
+    display: flex; align-items: center; gap: 6px; padding: 6px; background: var(--glass);
+    border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 4px 22px rgba(0,0,0,.1);
   }
-  #crosshair.on { opacity: 1; }
+  #tour button { width: 40px; height: 40px; border: 0; background: transparent; border-radius: 50%; font-size: 18px; }
+  #tour button:hover { background: rgba(0,0,0,.06); }
+  #tour .count { font-size: 12.5px; min-width: 64px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-  /* ---- Placa de obra em foco ---- */
-  #plate {
-    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
-    z-index: 22; min-width: 240px; max-width: min(90vw, 460px); padding: 16px 22px;
-    background: var(--panel); border: 1px solid rgba(255,255,255,.08); border-radius: 6px;
-    box-shadow: 0 12px 40px rgba(0,0,0,.5); opacity: 0; pointer-events: none;
-    transition: opacity .3s, transform .3s; text-align: center;
+  #hoverTag {
+    position: fixed; z-index: 15; pointer-events: none; padding: 6px 12px; background: var(--ink); color: var(--paper);
+    font-size: 12.5px; border-radius: 999px; opacity: 0; transform: translate(-50%, -150%); transition: opacity .15s; white-space: nowrap;
   }
-  #plate.on { opacity: 1; transform: translateX(-50%) translateY(0); }
-  #plate .t { font-size: 18px; font-weight: 500; letter-spacing: .02em; }
-  #plate .m { margin-top: 6px; font-size: 13px; color: #b7b2a8; }
-  #plate .hint { margin-top: 12px; font-size: 11.5px; color: #7d786d; letter-spacing: .08em; text-transform: uppercase; }
+  #hoverTag.on { opacity: 1; }
 
-  /* ---- Controles de toque (mobile) ---- */
-  #touch { position: fixed; inset: 0; z-index: 18; display: none; pointer-events: none; }
-  #touch.on { display: block; }
-  #stick {
-    position: absolute; left: 26px; bottom: 30px; width: 118px; height: 118px; border-radius: 50%;
-    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.18); pointer-events: auto;
+  /* ---------- Ficha da obra ---------- */
+  #card {
+    position: fixed; z-index: 30; top: 76px; right: 18px; bottom: 84px; width: min(380px, calc(100vw - 36px));
+    background: var(--glass); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 18px 60px rgba(0,0,0,.16);
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateX(calc(100% + 30px)); transition: transform .45s cubic-bezier(.2,.8,.2,1);
   }
-  #knob {
-    position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px;
-    border-radius: 50%; background: rgba(201,162,75,.75); box-shadow: 0 2px 10px rgba(0,0,0,.4);
-  }
-  #lookHint { position: absolute; right: 24px; bottom: 44px; color: #9a958a; font-size: 12px; pointer-events: none; }
+  #card.on { transform: none; }
+  #card .scroll { overflow-y: auto; padding: 26px 26px 10px; flex: 1; }
+  #card .close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(0,0,0,.05); font-size: 18px; }
+  #card .num { font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); }
+  #card h2 { font-family: var(--serif); font-weight: 600; font-size: 34px; line-height: 1.05; margin: 8px 0 4px; padding-right: 24px; }
+  #card .by { font-family: var(--serif); font-style: italic; font-size: 18px; color: var(--muted); }
+  #card dl { margin: 22px 0 18px; display: grid; grid-template-columns: auto 1fr; gap: 9px 16px; font-size: 13.5px; }
+  #card dt { color: var(--muted); }
+  #card dd { font-weight: 500; }
+  #card .concept { font-family: var(--serif); font-size: 18.5px; line-height: 1.45; color: #36332d; border-top: 1px solid var(--line); padding-top: 16px; white-space: pre-line; }
+  #card .foot { padding: 16px 22px 20px; border-top: 1px solid var(--line); background: rgba(255,255,255,.6); }
+  #card .price { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  #card .price b { font-family: var(--serif); font-size: 26px; font-weight: 600; }
+  .badge { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: #e5efe4; color: #2f5b2c; }
+  .badge.sold { background: #f3e0dc; color: var(--accent); }
+  .btns { display: flex; gap: 8px; }
+  .btn { flex: 1; padding: 13px 14px; border-radius: 999px; border: 1px solid var(--ink); background: transparent; font-size: 13px; font-weight: 500; }
+  .btn.primary { background: var(--ink); color: var(--paper); }
+  .btn.primary:hover { background: #000; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
 
-  #toast {
-    position: fixed; top: 68px; left: 50%; transform: translateX(-50%); z-index: 30;
-    background: var(--panel); color: #ece7dc; padding: 10px 18px; border-radius: 20px; font-size: 13px;
-    border: 1px solid rgba(255,255,255,.1); opacity: 0; transition: opacity .3s; pointer-events: none;
-  }
+  /* ---------- Visualizador com zoom ---------- */
+  #viewer { position: fixed; inset: 0; z-index: 50; background: #121110; display: none; touch-action: none; }
+  #viewer.on { display: block; }
+  #viewer .stage { position: absolute; inset: 0; overflow: hidden; cursor: grab; }
+  #viewer .stage.drag { cursor: grabbing; }
+  #viewer img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; will-change: transform; }
+  #viewer .bar { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: center; color: #eee; pointer-events: none; }
+  #viewer .bar .ttl { font-family: var(--serif); font-size: 22px; pointer-events: auto; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+  #viewer .tools { display: flex; gap: 6px; pointer-events: auto; }
+  #viewer .tools button { width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(30,30,30,.7); color: #fff; font-size: 18px; }
+  #viewer .hint { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.55); font-size: 12px; pointer-events: none; }
+
+  /* ---------- Modais ---------- */
+  .modal { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; background: rgba(20,18,15,.45); padding: 16px; }
+  .modal.on { display: flex; }
+  .sheet { background: var(--paper); border-radius: 18px; width: min(460px, 100%); max-height: 100%; overflow-y: auto; padding: 26px; position: relative; box-shadow: 0 30px 80px rgba(0,0,0,.3); }
+  .sheet h3 { font-family: var(--serif); font-size: 30px; font-weight: 600; line-height: 1.1; }
+  .sheet .lead { color: var(--muted); font-size: 13.5px; margin: 6px 0 18px; }
+  .sheet label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 5px; }
+  .sheet input, .sheet textarea { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font: inherit; font-size: 14px; }
+  .sheet textarea { min-height: 96px; resize: vertical; }
+  .sheet .btns { margin-top: 18px; flex-wrap: wrap; }
+  .sheet .close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(0,0,0,.05); font-size: 18px; }
+  .sheet .note { font-size: 11.5px; color: var(--muted); margin-top: 12px; }
+
+  #acervo .sheet { width: min(860px, 100%); }
+  #acervo .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; margin-top: 16px; }
+  #acervo .item { border: 0; background: transparent; text-align: left; }
+  #acervo .item .ph { aspect-ratio: 4/5; background: #e7e3da center/contain no-repeat; border-radius: 10px; }
+  #acervo .item .t { font-family: var(--serif); font-size: 17px; margin-top: 6px; }
+  #acervo .item .m { font-size: 11.5px; color: var(--muted); }
+
+  #toast { position: fixed; top: 74px; left: 50%; transform: translateX(-50%); z-index: 80; background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; }
   #toast.on { opacity: 1; }
-</style>
 
+  @media (max-width: 720px) {
+    #brand { font-size: 19px; }
+    #card { top: auto; left: 10px; right: 10px; bottom: 76px; width: auto; max-height: 58vh; transform: translateY(calc(100% + 100px)); }
+    #card h2 { font-size: 28px; }
+    #tour { bottom: 14px; }
+  }
+</style>
+</head>
+<body>
 <canvas id="scene"></canvas>
 
-<div id="hud">
-  <div id="topbar">
-    <div id="gname">Galeria <span>Virtual</span></div>
-    <button id="addBtn">＋ Adicionar obra</button>
+<div id="topbar">
+  <div id="brand">Galeria</div>
+  <button class="pill" id="btnAcervo">▦ Acervo</button>
+</div>
+
+<div id="tour">
+  <button id="prev" title="Obra anterior">←</button>
+  <span class="count" id="count">—</span>
+  <button id="next" title="Próxima obra">→</button>
+</div>
+
+<div id="hoverTag"></div>
+
+<aside id="card" aria-live="polite">
+  <button class="close" id="cardClose" title="Fechar">×</button>
+  <div class="scroll">
+    <div class="num" id="cNum"></div>
+    <h2 id="cTitle"></h2>
+    <div class="by" id="cBy"></div>
+    <dl>
+      <dt>Ano</dt><dd id="cYear"></dd>
+      <dt>Técnica</dt><dd id="cTech"></dd>
+      <dt>Dimensões</dt><dd id="cDim"></dd>
+    </dl>
+    <div class="concept" id="cConcept"></div>
   </div>
-</div>
-<div id="crosshair"></div>
+  <div class="foot">
+    <div class="price"><b id="cPrice"></b><span class="badge" id="cStatus"></span></div>
+    <div class="btns">
+      <button class="btn" id="btnZoom">⤢ Ampliar</button>
+      <button class="btn primary" id="btnBuy">Tenho interesse</button>
+    </div>
+  </div>
+</aside>
 
-<div id="plate">
-  <div class="t">—</div>
-  <div class="m">—</div>
-  <div class="hint">clique para aproximar</div>
+<div id="viewer">
+  <div class="stage"><img alt="" /></div>
+  <div class="bar">
+    <div class="ttl" id="vTitle"></div>
+    <div class="tools">
+      <button id="vOut" title="Afastar">−</button>
+      <button id="vIn" title="Aproximar">+</button>
+      <button id="vFit" title="Ajustar">⤢</button>
+      <button id="vClose" title="Fechar">×</button>
+    </div>
+  </div>
+  <div class="hint">Role ou faça pinça para dar zoom · arraste para mover · duplo clique aproxima</div>
 </div>
 
-<div id="touch">
-  <div id="stick"><div id="knob"></div></div>
-  <div id="lookHint">arraste aqui →<br>para olhar</div>
+<div class="modal" id="buy">
+  <form class="sheet" id="buyForm">
+    <button type="button" class="close" data-close>×</button>
+    <h3>Solicitar compra</h3>
+    <p class="lead" id="bLead"></p>
+    <label for="bName">Seu nome</label>
+    <input id="bName" required autocomplete="name" />
+    <label for="bContact">E-mail ou telefone</label>
+    <input id="bContact" required autocomplete="email" />
+    <label for="bMsg">Mensagem</label>
+    <textarea id="bMsg"></textarea>
+    <div class="btns">
+      <button type="submit" class="btn primary" data-via="whatsapp" id="bWhats">Enviar pelo WhatsApp</button>
+      <button type="submit" class="btn" data-via="email" id="bMail">Enviar por e-mail</button>
+    </div>
+    <p class="note">Sua mensagem vai direto para o artista. Valores, frete e formas de pagamento são combinados na conversa.</p>
+  </form>
+</div>
+
+<div class="modal" id="acervo">
+  <div class="sheet">
+    <button type="button" class="close" data-close>×</button>
+    <h3>Acervo</h3>
+    <p class="lead">Escolha uma obra para ir até ela na galeria.</p>
+    <div class="grid" id="grid"></div>
+  </div>
 </div>
 
 <div id="toast"></div>
 
 <div id="start">
-  <h1>Galeria Virtual</h1>
-  <div class="sub">Uma exposição imersiva das suas obras</div>
-  <button id="enter">Entrar na galeria</button>
-  <div id="help" data-desktop>
-    <b>W A S D</b> ou setas — caminhar &nbsp;·&nbsp; <b>Mouse</b> — olhar em volta<br>
-    <b>Clique</b> numa obra — aproximar &nbsp;·&nbsp; <b>ESC</b> — liberar o cursor
+  <div class="kicker" id="sKicker">Exposição virtual</div>
+  <h1 id="sTitle">Galeria</h1>
+  <div class="sub" id="sSub"></div>
+  <button id="enter" disabled>Carregando…</button>
+  <div id="progress"><i></i></div>
+  <div id="help">
+    <b>Arraste</b> para olhar em volta · <b>clique no chão</b> para caminhar · <b>clique numa obra</b> para ver detalhes<br>
+    <span class="desk"><b>W A S D</b> ou setas também caminham · <b>roda do mouse</b> aproxima a vista</span>
   </div>
 </div>
-
-<input id="fileInput" type="file" accept="image/*" multiple style="display:none" />
 
 <script type="importmap">
 { "imports": {
@@ -132,503 +250,671 @@
 
 <script type="module">
 import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
-// ---------------------------------------------------------------------------
-//  Renderer / Scene / Camera
-// ---------------------------------------------------------------------------
-const canvas = document.getElementById('scene');
+const $ = id => document.getElementById(id);
+const isTouch = matchMedia('(pointer: coarse)').matches;
+
+// ===========================================================================
+//  Dados
+// ===========================================================================
+const DATA = await fetch('obras.json').then(r => r.json());
+const G = DATA.galeria;
+document.title = G.nome;
+$('brand').textContent = G.nome;
+$('sTitle').textContent = G.nome;
+$('sSub').textContent = G.subtitulo || '';
+if (isTouch) document.querySelector('#help .desk').remove();
+
+// Geometria do museu (Museu XE.fbx, em metros). Paredes onde as obras podem ser penduradas:
+//   pos = coordenada ao longo da parede (x para "fundo"/"divisoria", z para "leste"/"oeste").
+const FLOOR_Y = 0.2, EYE = FLOOR_Y + 1.6, ART_Y = FLOOR_Y + 1.6;
+const PAREDES = {
+  fundo:     { axis: 'x', fixed: -12.2,  normal: new THREE.Vector3(0, 0, 1) },
+  leste:     { axis: 'z', fixed: 8.95,   normal: new THREE.Vector3(-1, 0, 0) },
+  oeste:     { axis: 'z', fixed: -35.45, normal: new THREE.Vector3(1, 0, 0) },
+  divisoria: { axis: 'x', fixed: 0.32,   normal: new THREE.Vector3(0, 0, 1) },
+};
+// Área caminhável (térreo) e obstáculos
+const BOUNDS = { x0: -35.0, x1: 8.5, z0: -11.75, z1: 11.85 };
+const PILLARS = [-29.7, -18.5, -7.3, 3.9].map(x => ({ x, z: 6.5, r: 0.8 }));
+const BOXES = [{ x0: -35.6, x1: -25.3, z0: -0.1, z1: 0.6 }];   // parede divisória
+const BODY = 0.4;
+
+function blocked(x, z) {
+  if (x < BOUNDS.x0 || x > BOUNDS.x1 || z < BOUNDS.z0 || z > BOUNDS.z1) return true;
+  for (const p of PILLARS) if (Math.hypot(x - p.x, z - p.z) < p.r + BODY) return true;
+  for (const b of BOXES) if (x > b.x0 - BODY && x < b.x1 + BODY && z > b.z0 - BODY && z < b.z1 + BODY) return true;
+  return false;
+}
+
+// ===========================================================================
+//  Renderer / cena
+// ===========================================================================
+const canvas = $('scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.15;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMappingExposure = 1.0;
+const DPR = Math.min(devicePixelRatio, 2);
+renderer.setPixelRatio(DPR);
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xeae7df);
+scene.background = skyTexture();
 
-const camera = new THREE.PerspectiveCamera(66, 1, 0.05, 120);
-// Sizing is driven by CSS + a per-frame check (the preview can start at 0×0).
-const DPR = Math.min(devicePixelRatio, 2);
+const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 200);
+camera.rotation.order = 'YXZ';
 function resizeToDisplay() {
   const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
-  const pw = Math.floor(w * DPR), ph = Math.floor(h * DPR);
-  if (canvas.width !== pw || canvas.height !== ph) {
-    renderer.setSize(pw, ph, false);       // false → don't touch inline style
+  if (canvas.width !== Math.floor(w * DPR) || canvas.height !== Math.floor(h * DPR)) {
+    renderer.setSize(w, h, false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
   }
 }
-const EYE = 1.62;
-camera.rotation.order = 'YXZ';
 
-const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-
-// ---------------------------------------------------------------------------
-//  Room dimensions
-// ---------------------------------------------------------------------------
-const RW = 24, RD = 16, RH = 6.5;            // width (x), depth (z), height (y)
-const HX = RW / 2, HZ = RD / 2;
-
-// ---------------------------------------------------------------------------
-//  Procedural textures (canvas)
-// ---------------------------------------------------------------------------
-function makeWoodTexture() {
-  // Carvalho claro em tábuas escalonadas (juntas topo desencontradas, como na referência).
+// ===========================================================================
+//  Texturas procedurais
+// ===========================================================================
+function skyTexture() {
+  const c = document.createElement('canvas'); c.width = 4; c.height = 256;
+  const x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 0, 256);
+  g.addColorStop(0, '#bcd3e6'); g.addColorStop(0.5, '#e9eef0'); g.addColorStop(1, '#d9d6cc');
+  x.fillStyle = g; x.fillRect(0, 0, 4, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function noiseCanvas(size, base, amp, blobs) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d'); x.fillStyle = base; x.fillRect(0, 0, size, size);
+  for (let i = 0; i < blobs; i++) {
+    const r = 20 + Math.random() * 120, px = Math.random() * size, py = Math.random() * size;
+    const g = x.createRadialGradient(px, py, 0, px, py, r);
+    const v = Math.random() < .5 ? 0 : 255;
+    g.addColorStop(0, `rgba(${v},${v},${v},${amp * Math.random()})`); g.addColorStop(1, `rgba(${v},${v},${v},0)`);
+    x.fillStyle = g; x.fillRect(px - r, py - r, r * 2, r * 2);
+  }
+  const d = x.getImageData(0, 0, size, size);       // grão fino
+  for (let i = 0; i < d.data.length; i += 4) { const n = (Math.random() - .5) * 10; d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n; }
+  x.putImageData(d, 0, 0);
+  return c;
+}
+function concreteTexture() {
+  const t = new THREE.CanvasTexture(noiseCanvas(1024, '#c9c4b9', 0.07, 260));
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso;
+  return t;
+}
+function woodTexture(light) {
   const c = document.createElement('canvas'); c.width = c.height = 1024;
-  const x = c.getContext('2d');
-  const cols = 8, cw = c.width / cols, segH = 512;   // largura da tábua / comprimento do segmento
+  const x = c.getContext('2d'); const cols = 8, cw = 1024 / cols;
   for (let ci = 0; ci < cols; ci++) {
-    const off = (ci % 2) * (segH / 2);               // junta escalonada meia-tábua
-    for (let y = -segH + off; y < c.height; y += segH) {
-      const tone = 204 + Math.floor(((ci * 29 + (y + 2048) / segH * 13) % 30));
-      x.fillStyle = `rgb(${tone},${tone - 26},${tone - 64})`;
-      x.fillRect(ci * cw, y, cw, segH);
-      for (let g = 0; g < 14; g++) {                 // veios longitudinais
-        x.strokeStyle = `rgba(120,86,50,${0.03 + Math.random() * 0.05})`; x.lineWidth = 1;
-        const gx = ci * cw + Math.random() * cw;
-        x.beginPath(); x.moveTo(gx, y); x.lineTo(gx + (Math.random() * 3 - 1.5), y + segH); x.stroke();
-      }
-      x.strokeStyle = 'rgba(70,46,24,0.42)'; x.lineWidth = 2;   // junta de topo
-      x.beginPath(); x.moveTo(ci * cw, y); x.lineTo(ci * cw + cw, y); x.stroke();
+    const tone = (light ? 190 : 150) + Math.floor(Math.random() * 26);
+    x.fillStyle = `rgb(${tone},${tone - 34},${tone - 78})`; x.fillRect(ci * cw, 0, cw, 1024);
+    for (let gi = 0; gi < 22; gi++) {
+      x.strokeStyle = `rgba(90,56,26,${0.04 + Math.random() * 0.07})`; x.lineWidth = 1 + Math.random() * 1.5;
+      const gx = ci * cw + Math.random() * cw; x.beginPath(); x.moveTo(gx, 0);
+      x.bezierCurveTo(gx + 6, 300, gx - 6, 700, gx + Math.random() * 4, 1024); x.stroke();
     }
-    x.strokeStyle = 'rgba(80,54,28,0.5)'; x.lineWidth = 2;      // fresta lateral
-    x.beginPath(); x.moveTo(ci * cw, 0); x.lineTo(ci * cw, c.height); x.stroke();
+    x.fillStyle = 'rgba(50,30,14,.45)'; x.fillRect(ci * cw, 0, 2, 1024);
   }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 5);
-  t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso; return t;
 }
 
-function makeCeilingGrid(nx, ny) {
-  // Teto luminoso: grade em dois níveis (quadradinhos finos + linhas fortes cada 6).
-  const c = document.createElement('canvas'); c.width = c.height = 1024;
-  const x = c.getContext('2d');
-  x.fillStyle = '#fcfcf7'; x.fillRect(0, 0, 1024, 1024);
-  const sx = 1024 / nx, sy = 1024 / ny;
-  x.strokeStyle = 'rgba(176,152,104,0.32)'; x.lineWidth = 1.5;   // grade fina
-  for (let i = 0; i <= nx; i++) { x.beginPath(); x.moveTo(i * sx, 0); x.lineTo(i * sx, 1024); x.stroke(); }
-  for (let j = 0; j <= ny; j++) { x.beginPath(); x.moveTo(0, j * sy); x.lineTo(1024, j * sy); x.stroke(); }
-  x.strokeStyle = 'rgba(166,140,90,0.7)'; x.lineWidth = 3.5;     // linhas fortes
-  for (let i = 0; i <= nx; i += 6) { x.beginPath(); x.moveTo(i * sx, 0); x.lineTo(i * sx, 1024); x.stroke(); }
-  for (let j = 0; j <= ny; j += 6) { x.beginPath(); x.moveTo(0, j * sy); x.lineTo(1024, j * sy); x.stroke(); }
-  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+// ===========================================================================
+//  Materiais (o FBX do KeyShot chega sem texturas — trocamos pelo nome)
+// ===========================================================================
+const concrete = concreteTexture(); concrete.repeat.set(10, 6);
+const oakLight = woodTexture(true); oakLight.repeat.set(4, 4);
+const oakDark = woodTexture(false); oakDark.repeat.set(6, 6);
+const M = {
+  Floor:          new THREE.MeshStandardMaterial({ map: concrete, roughness: 0.42, metalness: 0 }),
+  Walls:          new THREE.MeshStandardMaterial({ color: 0xf3f0ea, roughness: 0.95, emissive: 0x2a2824 }),
+  'Wall-detail':  new THREE.MeshStandardMaterial({ color: 0xf3f0ea, roughness: 0.9 }),
+  Pillar:         new THREE.MeshStandardMaterial({ color: 0xf1eee8, roughness: 0.9 }),
+  Trim:           new THREE.MeshStandardMaterial({ color: 0x8d877c, roughness: 0.6 }),
+  'Planks-wall':  new THREE.MeshStandardMaterial({ map: oakLight, roughness: 0.7 }),
+  'Wood-ceiling': new THREE.MeshStandardMaterial({ map: oakDark, roughness: 0.75 }),
+  Railing:        new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.4, metalness: 0.6 }),
+  Window:         new THREE.MeshStandardMaterial({ color: 0x2b2d2f, roughness: 0.45, metalness: 0.5 }),
+  Glass:          new THREE.MeshStandardMaterial({ color: 0xdfeef2, roughness: 0.05, metalness: 0, transparent: true, opacity: 0.16, depthWrite: false }),
+  Lamp:           new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.4 }),
+  Light:          new THREE.MeshBasicMaterial({ color: 0xfffaf0 }),
+};
+const fallbackMat = M.Walls;
+// teto do térreo: recebe pouca luz direta, então leva um brilho próprio para não ficar acinzentado
+const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xf6f4ef, roughness: 0.95, emissive: 0x9a968e });
+
+// ===========================================================================
+//  Luz
+// ===========================================================================
+scene.add(new THREE.HemisphereLight(0xfffdf8, 0xd8d1c3, 1.7));
+const sun = new THREE.DirectionalLight(0xfff4e0, 0.9);
+sun.position.set(-10, 20, 25); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xf0f4ff, 0.35);
+fill.position.set(15, 10, -20); scene.add(fill);
+
+// chão externo (visto pelas janelas)
+const outside = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({ color: 0xb7b4a8, roughness: 1 }));
+outside.rotation.x = -Math.PI / 2; outside.position.y = -0.02; scene.add(outside);
+
+// ===========================================================================
+//  Carregamento
+// ===========================================================================
+const manager = new THREE.LoadingManager();
+manager.onProgress = (_u, done, total) => { $('progress').firstElementChild.style.width = (100 * done / total) + '%'; };
+const ready = new Promise(res => { manager.onLoad = res; });
+
+const museum = new THREE.Group(); scene.add(museum);
+const pickable = [];            // tudo que bloqueia o clique (paredes, chão…)
+let floorMesh = null;
+
+new FBXLoader(manager).load('assets/museu.fbx', root => {
+  root.traverse(o => {
+    if (o.isCamera || o.isLight) { o.visible = false; return; }
+    if (!o.isMesh) return;
+    const name = (Array.isArray(o.material) ? o.material[0] : o.material).name;
+    o.material = Array.isArray(o.material) ? o.material.map(m => M[m.name] || fallbackMat) : (M[name] || fallbackMat);
+    if (name === 'Glass') o.renderOrder = 2;
+    if (o.name === 'Floor') floorMesh = o;
+    if (o.name === 'Ceiling001' || o.name === 'Detail') o.material = ceilingMat;   // Detail vem com normais ruins (ficava preto)
+    if (name !== 'Glass' && name !== 'Light') pickable.push(o);
+  });
+  museum.add(root);
+  addClosingWalls();
+});
+
+// O arquivo foi feito para renders: as pontas do salão ficam abertas. Fechamos com paredes iguais.
+function addClosingWalls() {
+  const H = 3.7 - FLOOR_Y + 0.05;
+  const mk = (w, x, z, ry) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, H), M.Walls);
+    m.position.set(x, FLOOR_Y + H / 2 - 0.02, z); m.rotation.y = ry; museum.add(m); pickable.push(m);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, 0.02), M.Trim);
+    base.position.set(0, -H / 2 + 0.07, 0.01); m.add(base);
+  };
+  mk(24.6, 9.0, 0.05, -Math.PI / 2);          // leste
+  mk(12.6, -35.5, -6.0, Math.PI / 2);         // oeste (atrás do mezanino)
 }
 
-const PALETTES = [
-  ['#efe1c4', '#c85a3c', '#2f5d7c'], ['#e3ead8', '#3f7d54', '#c69235'],
-  ['#efe3cf', '#864f92', '#d7a93e'], ['#f2ddc4', '#b23a30', '#33553a'],
-  ['#dde9f0', '#3a6ea5', '#e2b84e'], ['#ece5d8', '#c06a34', '#546b8a'],
-];
-function makePlaceholderArt(seed) {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 640;
-  const x = c.getContext('2d'); const p = PALETTES[seed % PALETTES.length];
-  // fundo claro
-  const g = x.createLinearGradient(0, 0, 0, 640);
-  g.addColorStop(0, '#f6efe0'); g.addColorStop(1, p[0]); x.fillStyle = g; x.fillRect(0, 0, 512, 640);
-  // formas vívidas sobrepostas
-  for (let i = 0; i < 7; i++) {
-    x.globalAlpha = 0.55 + (i % 2) * 0.25; x.fillStyle = (i % 2) ? p[1] : p[2];
-    const s = 70 + ((seed * 37 + i * 53) % 190);
-    x.beginPath();
-    x.ellipse(70 + ((seed * 91 + i * 130) % 380), 90 + ((seed * 57 + i * 170) % 470), s, s * 0.72, i * 1.1, 0, 7); x.fill();
+// ===========================================================================
+//  Obras
+// ===========================================================================
+const texLoader = new THREE.TextureLoader(manager);
+const artworks = [];
+const artMeshes = [];
+const panelSide = new THREE.MeshStandardMaterial({ color: 0x2a2520, roughness: 0.8 });
+
+DATA.obras.forEach((o, i) => {
+  const wall = PAREDES[o.parede] || PAREDES.fundo;
+  const w = (o.largura_cm || 80) / 100, h = (o.altura_cm || 100) / 100;
+  const center = wall.axis === 'x'
+    ? new THREE.Vector3(o.pos, ART_Y, wall.fixed) : new THREE.Vector3(wall.fixed, ART_Y, o.pos);
+  const group = new THREE.Group();
+  group.position.copy(center).addScaledVector(wall.normal, 0.03);
+  group.rotation.y = Math.atan2(wall.normal.x, wall.normal.z);
+  scene.add(group);
+
+  const artMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.62, transparent: false });
+  const art = new THREE.Mesh(new THREE.PlaneGeometry(w, h), artMat);
+  art.position.z = o.recorte ? 0.012 : 0.031;
+  art.userData.index = i;
+  group.add(art); artMeshes.push(art);
+
+  if (!o.recorte) {    // painel com espessura (tela/madeira)
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.03), panelSide);
+    slab.position.z = 0.015; group.add(slab);
   }
-  x.globalAlpha = 1;
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  return { texture: t, aspect: 512 / 640 };
+
+  // etiqueta de parede
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.15),
+    new THREE.MeshStandardMaterial({ map: labelTexture(o, i), roughness: 0.8 }));
+  label.position.set(w / 2 + 0.35, -0.25, 0.006); group.add(label);
+
+  // spot de galeria vindo do teto
+  const spot = new THREE.SpotLight(0xfff1dc, 6, 0, 0.5, 1, 1.4);
+  const sp = center.clone().addScaledVector(wall.normal, 1.6); sp.y = 3.6;
+  spot.position.copy(sp); spot.target.position.copy(center); spot.target.position.y -= 0.1;
+  scene.add(spot, spot.target);
+
+  // nas paredes usa a versão leve (obras/parede/); a original em alta fica para o zoom
+  texLoader.load(o.arquivo.replace(/([^/]+)$/, 'parede/$1'), tex => {
+    tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = maxAniso;
+    if (o.recorte) {
+      artMat.map = cutoutTexture(tex.image); artMat.alphaTest = 0.5;
+    } else artMat.map = tex;
+    artMat.color.set(0xffffff); artMat.needsUpdate = true;
+  });
+
+  artworks.push({ data: o, group, art, center, normal: wall.normal.clone(), w, h, index: i });
+});
+
+// Remove o fundo branco ligado às bordas (para obras de formato irregular).
+function cutoutTexture(img) {
+  const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+  const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data, W = c.width, H = c.height;
+  const seen = new Uint8Array(W * H), stack = [];
+  const white = k => p[k * 4] > 232 && p[k * 4 + 1] > 232 && p[k * 4 + 2] > 232;
+  for (let xx = 0; xx < W; xx++) stack.push(xx, (H - 1) * W + xx);
+  for (let yy = 0; yy < H; yy++) stack.push(yy * W, yy * W + W - 1);
+  while (stack.length) {
+    const k = stack.pop();
+    if (seen[k] || !white(k)) continue;
+    seen[k] = 1; p[k * 4 + 3] = 0;
+    const xx = k % W, yy = (k / W) | 0;
+    if (xx > 0) stack.push(k - 1); if (xx < W - 1) stack.push(k + 1);
+    if (yy > 0) stack.push(k - W); if (yy < H - 1) stack.push(k + W);
+  }
+  x.putImageData(d, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = maxAniso;
+  return t;
 }
 
-function makePlaqueTexture(title, meta) {
-  const c = document.createElement('canvas'); c.width = 640; c.height = 200;
+function labelTexture(o, i) {
+  const c = document.createElement('canvas'); c.width = 600; c.height = 300;
   const x = c.getContext('2d');
-  x.fillStyle = '#efe9dd'; x.fillRect(0, 0, 640, 200);
-  x.fillStyle = '#1c1a17'; x.font = '600 40px Georgia, serif'; x.textAlign = 'center';
-  x.fillText(clip(title, 26), 320, 80);
-  x.fillStyle = '#5a544a'; x.font = 'italic 28px Georgia, serif';
-  x.fillText(clip(meta, 40), 320, 132);
-  x.strokeStyle = '#c9a24b'; x.lineWidth = 4; x.strokeRect(6, 6, 628, 188);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+  x.fillStyle = '#fbfaf7'; x.fillRect(0, 0, 600, 300);
+  x.fillStyle = '#1b1a17'; x.font = '600 46px Georgia, serif';
+  x.fillText(clip(o.titulo, 22), 34, 78);
+  x.fillStyle = '#5d584f'; x.font = 'italic 32px Georgia, serif';
+  x.fillText(clip([G.artista, o.ano].filter(Boolean).join(', '), 30), 34, 128);
+  x.font = '28px Arial, sans-serif'; x.fillStyle = '#5d584f';
+  wrap(x, o.tecnica || '', 34, 182, 530, 34, 2);
+  if (o.status === 'vendida') { x.fillStyle = '#b3261e'; x.beginPath(); x.arc(560, 60, 14, 0, 7); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
 function clip(s, n) { s = s || ''; return s.length > n ? s.slice(0, n - 1) + '…' : s; }
-
-// ---------------------------------------------------------------------------
-//  Build the room
-// ---------------------------------------------------------------------------
-const wallMat = new THREE.MeshStandardMaterial({ color: 0xfcfbf7, roughness: 0.97, metalness: 0 });
-const woodMat = new THREE.MeshStandardMaterial({ map: makeWoodTexture(), roughness: 0.55, metalness: 0.02 });
-const benchMat = new THREE.MeshStandardMaterial({ color: 0xcdac78, roughness: 0.5, metalness: 0.02 });
-
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD), woodMat);
-floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
-
-// Teto luminoso (grade) com borda branca em volta — principal fonte de luz visual
-const ceilBase = new THREE.Mesh(new THREE.PlaneGeometry(RW, RD),
-  new THREE.MeshBasicMaterial({ color: 0xffffff }));
-ceilBase.rotation.x = Math.PI / 2; ceilBase.position.y = RH; scene.add(ceilBase);
-const ceilGrid = new THREE.Mesh(new THREE.PlaneGeometry(RW - 1.8, RD - 1.8),
-  new THREE.MeshBasicMaterial({ map: makeCeilingGrid(28, 18) }));
-ceilGrid.rotation.x = Math.PI / 2; ceilGrid.position.y = RH - 0.03; scene.add(ceilGrid);
-
-function wall(w, h, x, y, z, ry) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
-  m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; scene.add(m);
-}
-wall(RW, RH, 0, RH / 2, -HZ, 0);            // far  (normal +z)
-wall(RW, RH, 0, RH / 2, HZ, Math.PI);       // near (normal -z)
-wall(RD, RH, -HX, RH / 2, 0, Math.PI / 2);  // left (normal +x)
-wall(RD, RH, HX, RH / 2, 0, -Math.PI / 2);  // right(normal -x)
-
-// --- Bancos de madeira maciça, longos e baixos (como na referência) ---
-function bench(x, z, len) {
-  const b = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, len), benchMat);
-  b.position.set(x, 0.2, z); b.castShadow = true; b.receiveShadow = true; scene.add(b);
-}
-bench(-2.2, 3.0, 3.2);
-bench(1.2, 0.4, 3.2);
-
-// --- Porta escura para uma sala adjacente (parede esquerda) ---
-(function doorway() {
-  const dw = 1.3, dh = 2.5, dz = -5.2;
-  // vão escuro
-  const opening = new THREE.Mesh(new THREE.PlaneGeometry(dw, dh),
-    new THREE.MeshBasicMaterial({ color: 0x232a30 }));
-  opening.position.set(-HX + 0.02, dh / 2, dz); opening.rotation.y = Math.PI / 2; scene.add(opening);
-  // profundidade falsa (parede do fundo da sala vizinha, mais escura)
-  const back = new THREE.Mesh(new THREE.PlaneGeometry(1.6, dh),
-    new THREE.MeshStandardMaterial({ color: 0x2b333b, roughness: 1 }));
-  back.position.set(-HX - 1.3, dh / 2, dz); back.rotation.y = Math.PI / 2; scene.add(back);
-  const side = new THREE.Mesh(new THREE.PlaneGeometry(1.35, dh),
-    new THREE.MeshStandardMaterial({ color: 0x1d2429, roughness: 1 }));
-  side.position.set(-HX - 0.65, dh / 2, dz - dw / 2); scene.add(side);
-})();
-
-// ---------------------------------------------------------------------------
-//  Lighting
-// ---------------------------------------------------------------------------
-// Luz difusa e uniforme, como vinda de um teto de vidro (white cube).
-scene.add(new THREE.HemisphereLight(0xffffff, 0xeae6dc, 1.5));
-scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-// leve direcional do alto só para dar sombra suave nos bancos
-const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-sun.position.set(3, RH + 4, 5);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -HX; sun.shadow.camera.right = HX;
-sun.shadow.camera.top = HZ; sun.shadow.camera.bottom = -HZ;
-sun.shadow.camera.near = 1; sun.shadow.camera.far = RH + 12; sun.shadow.bias = -0.0005;
-scene.add(sun);
-
-// ---------------------------------------------------------------------------
-//  Slots (anchor points on walls)
-// ---------------------------------------------------------------------------
-const CY = 1.72;                             // centro vertical das obras (nível do olhar)
-const SLOTS = [];
-for (const z of [-1.75, 1.75, 5.2]) SLOTS.push({ pos: new THREE.Vector3(-HX + 0.08, CY, z), ry: Math.PI / 2, n: new THREE.Vector3(1, 0, 0), maxW: 2.6, maxH: 2.1 });
-for (const z of [-5.2, -1.75, 1.75, 5.2]) SLOTS.push({ pos: new THREE.Vector3(HX - 0.08, CY, z), ry: -Math.PI / 2, n: new THREE.Vector3(-1, 0, 0), maxW: 2.6, maxH: 2.1 });
-for (const x of [-6.5, 0, 6.5]) SLOTS.push({ pos: new THREE.Vector3(x, CY, -HZ + 0.08), ry: 0, n: new THREE.Vector3(0, 0, 1), maxW: 3.0, maxH: 2.3 });
-
-const frameMat = new THREE.MeshStandardMaterial({ color: 0x1c1a17, roughness: 0.6, metalness: 0.1 });
-const goldMat = new THREE.MeshStandardMaterial({ color: 0xb98f3e, roughness: 0.4, metalness: 0.6 });
-
-const artworks = [];          // { group, slot, mesh, meta }
-const raycastTargets = [];
-
-function fitSize(aspect, slot) {
-  let h = slot.maxH, w = h * aspect;
-  if (w > slot.maxW) { w = slot.maxW; h = w / aspect; }
-  return { w, h };
+function wrap(ctx, text, x, y, maxW, lh, maxLines) {
+  const words = text.split(' '); let line = '', n = 0;
+  for (const wd of words) {
+    const test = line ? line + ' ' + wd : wd;
+    if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, y); y += lh; line = wd; if (++n >= maxLines - 1) break; }
+    else line = test;
+  }
+  ctx.fillText(line, x, y);
 }
 
-function buildArtwork(slotIndex, texture, aspect, title, meta) {
-  const slot = SLOTS[slotIndex];
-  // remove antigo
-  const old = artworks[slotIndex];
-  if (old) { scene.remove(old.group); const i = raycastTargets.indexOf(old.mesh); if (i >= 0) raycastTargets.splice(i, 1); }
-
-  const { w, h } = fitSize(aspect, slot);
-  const g = new THREE.Group();
-  g.position.copy(slot.pos); g.rotation.y = slot.ry;
-
-  // moldura fina dourada
-  const outer = new THREE.Mesh(new THREE.BoxGeometry(w + 0.13, h + 0.13, 0.06), goldMat);
-  outer.position.z = -0.02; outer.castShadow = true; g.add(outer);
-  const inner = new THREE.Mesh(new THREE.BoxGeometry(w + 0.03, h + 0.03, 0.07), frameMat);
-  inner.position.z = -0.01; g.add(inner);
-
-  const art = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
-    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6, metalness: 0 }));
-  art.position.z = 0.025; art.userData.slotIndex = slotIndex; g.add(art);
-  raycastTargets.push(art);
-
-  // placa
-  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.156),
-    new THREE.MeshStandardMaterial({ map: makePlaqueTexture(title, meta), roughness: 0.9 }));
-  plaque.position.set(w / 2 - 0.25, -h / 2 - 0.34, 0.02); g.add(plaque);
-
-  scene.add(g);
-  artworks[slotIndex] = { group: g, slot, mesh: art,
-    meta: { title, meta, center: slot.pos.clone(), n: slot.n.clone() } };
-}
-
-// preenche com obras de exemplo
-for (let i = 0; i < SLOTS.length; i++) {
-  const { texture, aspect } = makePlaceholderArt(i);
-  buildArtwork(i, texture, aspect, `Obra ${i + 1}`, 'Adicione sua foto');
-}
-
-// ---------------------------------------------------------------------------
-//  First-person controls
-// ---------------------------------------------------------------------------
-camera.position.set(0, EYE, HZ - 1.5);
-let yaw = 0, pitch = 0;
+// ===========================================================================
+//  Câmera / navegação
+// ===========================================================================
+let yaw = 0, pitch = 0, fov = 62;
+camera.position.set(4.5, EYE, 9.5);
+yaw = Math.atan2(4.5 - (-12), 9.5 - (-8));     // olhando para o fundo do salão
+let active = false;
+let walkTo = null;                // Vector3 de destino ao clicar no chão
+let fly = null;                   // animação até uma obra
+let current = -1;                 // obra em foco
 const keys = {};
-const move = new THREE.Vector2();      // x = strafe, y = forward
-let locked = false, active = false;
 
-// --- foco em obra ---
-let focus = null;   // { pos, yaw, pitch, t }
-function focusArtwork(a) {
-  const size = fitSize(a.mesh.geometry.parameters.width / a.mesh.geometry.parameters.height, a.slot);
-  const d = Math.max(2.2, size.w * 1.15, size.h * 1.0);
-  const target = a.meta.center.clone().addScaledVector(a.meta.n, d); target.y = EYE;
-  const fwd = a.meta.center.clone().sub(target).normalize();
-  focus = { pos: target, yaw: Math.atan2(-fwd.x, -fwd.z), pitch: Math.asin(THREE.MathUtils.clamp(fwd.y, -1, 1)), t: 0 };
-  showPlate(a.meta.title, a.meta.meta);
-}
-function cancelFocus() { if (focus) { focus = null; hidePlate(); } }
+function setPose(pos, y, p) { camera.position.copy(pos); yaw = y; pitch = p; }
 
-// --- look ---
-function applyLook(dx, dy) {
-  yaw -= dx * 0.0024; pitch -= dy * 0.0024;
-  pitch = THREE.MathUtils.clamp(pitch, -1.2, 1.2);
-  cancelFocus();
-}
-
-// Desktop pointer lock
-if (!isTouch) {
-  document.addEventListener('mousemove', e => { if (locked) applyLook(e.movementX, e.movementY); });
-  document.addEventListener('pointerlockchange', () => {
-    locked = document.pointerLockElement === document.body;
-    document.getElementById('crosshair').classList.toggle('on', locked);
-  });
-  document.addEventListener('click', e => {
-    if (!active) return;
-    if (!locked) { document.body.requestPointerLock(); return; }
-    // raycast do centro
-    const hit = raycastCenter();
-    if (hit) focusArtwork(artworks[hit.object.userData.slotIndex]);
-    else cancelFocus();
-  });
-  addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') cancelFocus(); });
-  addEventListener('keyup', e => { keys[e.code] = false; });
+function viewpointFor(a) {
+  const tanV = Math.tan(THREE.MathUtils.degToRad(55) / 2), aspect = innerWidth / innerHeight;
+  const narrow = innerWidth <= 720;
+  // celular: a ficha ocupa a metade de baixo, então a obra precisa caber no terço de cima
+  const d = narrow
+    ? THREE.MathUtils.clamp(Math.max(a.h / (0.28 * 2 * tanV), a.w / (0.85 * 2 * tanV * aspect)), 1.9, 6)
+    : THREE.MathUtils.clamp(Math.max(a.h, a.w) * 1.35 + 0.7, 1.9, 3.6);
+  const pos = a.center.clone().addScaledVector(a.normal, d); pos.y = EYE;
+  const look = a.center.clone();
+  if (narrow) look.y -= 0.52 * d * tanV;
+  else {
+    // no desktop a ficha ocupa a direita: mira um pouco à direita para a obra ficar no espaço livre
+    const right = new THREE.Vector3().crossVectors(a.normal.clone().negate(), new THREE.Vector3(0, 1, 0));
+    const halfW = Math.tan(THREE.MathUtils.degToRad(55) / 2) * (innerWidth / innerHeight) * d;
+    look.addScaledVector(right, (400 / innerWidth) * halfW);
+  }
+  const dir = look.sub(pos);
+  return { pos, yaw: Math.atan2(-dir.x, -dir.z), pitch: Math.atan2(dir.y, Math.hypot(dir.x, dir.z)) };
 }
 
-// Touch controls
-if (isTouch) {
-  const stick = document.getElementById('stick'), knob = document.getElementById('knob');
-  let stickId = null, cx = 0, cy = 0;
-  const R = 44;
-  stick.addEventListener('touchstart', e => {
-    const t = e.changedTouches[0]; stickId = t.identifier;
-    const r = stick.getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
-    e.preventDefault();
-  }, { passive: false });
-  addEventListener('touchmove', e => {
-    for (const t of e.changedTouches) {
-      if (t.identifier === stickId) {
-        let dx = t.clientX - cx, dy = t.clientY - cy;
-        const len = Math.hypot(dx, dy) || 1; const cl = Math.min(len, R);
-        dx = dx / len * cl; dy = dy / len * cl;
-        knob.style.transform = `translate(${dx}px,${dy}px)`;
-        move.set(dx / R, -dy / R);
-      } else if (t.identifier === lookId) {
-        applyLook(t.clientX - lx, t.clientY - ly); lx = t.clientX; ly = t.clientY;
-      }
-    }
-  }, { passive: false });
-  let lookId = null, lx = 0, ly = 0;
-  addEventListener('touchstart', e => {
-    for (const t of e.changedTouches) {
-      if (t.target === stick || t.target === knob) continue;
-      if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY;
-        // tap curto = tentar focar
-        t._t0 = performance.now && 0; }
-    }
-  });
-  addEventListener('touchend', e => {
-    for (const t of e.changedTouches) {
-      if (t.identifier === stickId) { stickId = null; knob.style.transform = ''; move.set(0, 0); }
-      if (t.identifier === lookId) {
-        lookId = null;
-        const hit = raycastAt(t.clientX, t.clientY);
-        if (hit) focusArtwork(artworks[hit.object.userData.slotIndex]);
-      }
-    }
-  });
+function goToArtwork(i, openCard = true) {
+  if (i < 0 || i >= artworks.length) return;
+  const a = artworks[i];
+  const v = viewpointFor(a);
+  let dy = v.yaw - yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));   // menor giro
+  fly = { from: camera.position.clone(), to: v.pos, y0: yaw, y1: yaw + dy, p0: pitch, p1: v.pitch, f0: fov, t: 0,
+          dur: THREE.MathUtils.clamp(camera.position.distanceTo(v.pos) / 7, 0.8, 2.6) };
+  walkTo = null; current = i;
+  $('count').textContent = `${i + 1} / ${artworks.length}`;
+  if (openCard) showCard(i);
+  history.replaceState(null, '', '#' + a.data.id);
 }
 
+function cancelAuto() { fly = null; walkTo = null; }
+
+// --- ponteiro: arrastar = olhar, clique = andar/abrir obra ---
 const raycaster = new THREE.Raycaster();
-function raycastCenter() {
-  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-  const h = raycaster.intersectObjects(raycastTargets, false);
-  return h.length && h[0].distance < 30 ? h[0] : null;
-}
-function raycastAt(cxp, cyp) {
-  const v = new THREE.Vector2((cxp / innerWidth) * 2 - 1, -(cyp / innerHeight) * 2 + 1);
-  raycaster.setFromCamera(v, camera);
-  const h = raycaster.intersectObjects(raycastTargets, false);
-  return h.length && h[0].distance < 40 ? h[0] : null;
-}
+const ndc = new THREE.Vector2();
+const pointers = new Map();
+let dragDist = 0, pinch0 = 0, fov0 = fov;
 
-// ---------------------------------------------------------------------------
-//  UI plate / toast
-// ---------------------------------------------------------------------------
-const plate = document.getElementById('plate');
-function showPlate(t, m) {
-  plate.querySelector('.t').textContent = t;
-  plate.querySelector('.m').textContent = m;
-  plate.classList.add('on');
-}
-function hidePlate() { plate.classList.remove('on'); }
-let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('on');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('on'), 2600);
-}
-
-// hover plate (desktop)
-let lastHover = -1;
-function updateHover() {
-  if (isTouch || focus) return;
-  const hit = raycastCenter();
-  const idx = hit ? hit.object.userData.slotIndex : -1;
-  if (idx !== lastHover) {
-    lastHover = idx;
-    if (idx >= 0) showPlate(artworks[idx].meta.title, artworks[idx].meta.meta);
-    else hidePlate();
+function pick(clientX, clientY) {
+  ndc.set((clientX / innerWidth) * 2 - 1, -(clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects([...artMeshes, ...pickable], false);
+  for (const h of hits) {
+    if (h.object.userData.index !== undefined) {
+      // ignora pixels transparentes das obras recortadas
+      const a = artworks[h.object.userData.index];
+      if (a.data.recorte && !opaqueAt(h.object, h.uv)) continue;
+      return { type: 'art', index: h.object.userData.index, dist: h.distance };
+    }
+    if (h.object === floorMesh && h.face && h.face.normal && h.point.y < FLOOR_Y + 0.05) return { type: 'floor', point: h.point };
+    return { type: 'wall' };
   }
+  return null;
+}
+function opaqueAt(mesh, uv) {
+  const img = mesh.material.map && mesh.material.map.image;
+  if (!img || !uv || !img.getContext) return true;
+  const px = img.getContext('2d').getImageData(Math.floor(uv.x * (img.width - 1)), Math.floor((1 - uv.y) * (img.height - 1)), 1, 1).data;
+  return px[3] > 128;
 }
 
-// ---------------------------------------------------------------------------
-//  Upload de obras
-// ---------------------------------------------------------------------------
-const fileInput = document.getElementById('fileInput');
-let nextSlot = 0;
-document.getElementById('addBtn').addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', e => loadFiles(e.target.files));
-addEventListener('dragover', e => e.preventDefault());
-addEventListener('drop', e => { e.preventDefault(); loadFiles(e.dataTransfer.files); });
-
-function loadFiles(files) {
-  const imgs = [...files].filter(f => f.type.startsWith('image/'));
-  if (!imgs.length) return;
-  for (const f of imgs) {
-    if (nextSlot >= SLOTS.length) { toast('Galeria cheia — todas as paredes ocupadas'); break; }
-    const slotIndex = nextSlot++;
-    const url = URL.createObjectURL(f);
-    new THREE.TextureLoader().load(url, tex => {
-      tex.colorSpace = THREE.SRGBColorSpace;
-      const asp = tex.image.width / tex.image.height;
-      buildArtwork(slotIndex, tex, asp, f.name.replace(/\.[^.]+$/, ''), 'Sua obra');
-    });
-  }
-  toast(`${imgs.length} obra(s) adicionada(s)`);
-}
-
-// ---------------------------------------------------------------------------
-//  Start
-// ---------------------------------------------------------------------------
-const startEl = document.getElementById('start');
-document.getElementById('enter').addEventListener('click', () => {
-  startEl.classList.add('hidden'); active = true;
-  if (isTouch) document.getElementById('touch').classList.add('on');
-  else document.body.requestPointerLock();
+canvas.addEventListener('pointerdown', e => {
+  if (!active) return;
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  dragDist = 0;
+  if (pointers.size === 2) { const [p, q] = [...pointers.values()]; pinch0 = Math.hypot(p.x - q.x, p.y - q.y); fov0 = fov; }
 });
-if (isTouch) document.querySelector('#help').innerHTML =
-  '<b>Joystick</b> (esquerda) — caminhar &nbsp;·&nbsp; <b>Arraste</b> (direita) — olhar<br><b>Toque</b> numa obra — aproximar';
+canvas.addEventListener('pointermove', e => {
+  if (!active) return;
+  const p = pointers.get(e.pointerId);
+  if (!p) { hover(e.clientX, e.clientY); return; }
+  const dx = e.clientX - p.x, dy = e.clientY - p.y;
+  p.x = e.clientX; p.y = e.clientY;
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    fov = THREE.MathUtils.clamp(fov0 * pinch0 / d, 25, 75); dragDist = 99; return;
+  }
+  dragDist += Math.abs(dx) + Math.abs(dy);
+  if (dragDist > 6) {
+    canvas.classList.add('drag');
+    const s = (isTouch ? 0.0045 : 0.0032) * (fov / 62);
+    yaw += dx * s; pitch = THREE.MathUtils.clamp(pitch + dy * s, -1.1, 1.1);
+    fly = null;
+  }
+});
+function endPointer(e) {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  canvas.classList.remove('drag');
+  if (dragDist <= 6 && pointers.size === 0) click(e.clientX, e.clientY);
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); canvas.classList.remove('drag'); });
 
-// ---------------------------------------------------------------------------
+function click(x, y) {
+  const h = pick(x, y);
+  if (!h) return;
+  if (h.type === 'art') { goToArtwork(h.index); }
+  else if (h.type === 'floor') {
+    const t = h.point.clone(); t.y = EYE;
+    if (!blocked(t.x, t.z)) { walkTo = t; fly = null; ring.position.set(t.x, FLOOR_Y + 0.01, t.z); ringT = 1; }
+    hideCard();
+  }
+}
+
+// marcador no chão
+const ring = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.3, 40),
+  new THREE.MeshBasicMaterial({ color: 0x1b1a17, transparent: true, opacity: 0, depthWrite: false }));
+ring.rotation.x = -Math.PI / 2; scene.add(ring);
+let ringT = 0, hoverRing = false;
+
+const tag = $('hoverTag');
+function hover(x, y) {
+  if (isTouch) return;
+  const h = pick(x, y);
+  canvas.classList.toggle('art', h?.type === 'art');
+  canvas.classList.toggle('walk', h?.type === 'floor');
+  if (h?.type === 'art') {
+    tag.textContent = artworks[h.index].data.titulo; tag.style.left = x + 'px'; tag.style.top = y + 'px'; tag.classList.add('on');
+  } else tag.classList.remove('on');
+  hoverRing = h?.type === 'floor';
+  if (hoverRing && ringT <= 0) ring.position.set(h.point.x, FLOOR_Y + 0.01, h.point.z);
+}
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  fov = THREE.MathUtils.clamp(fov * (1 + e.deltaY * 0.0012), 25, 75);
+}, { passive: false });
+
+addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea')) return;
+  keys[e.code] = true;
+  if (e.code === 'Escape') { if ($('viewer').classList.contains('on')) closeViewer(); else hideCard(); }
+  if (!$('viewer').classList.contains('on') && active) {
+    if (e.code === 'BracketRight' || e.code === 'KeyE') step(1);
+    if (e.code === 'BracketLeft' || e.code === 'KeyQ') step(-1);
+  }
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+function step(d) {
+  const n = artworks.length;
+  goToArtwork(current < 0 ? (d > 0 ? 0 : n - 1) : (current + d + n) % n);
+}
+$('prev').onclick = () => step(-1);
+$('next').onclick = () => step(1);
+
+// ===========================================================================
+//  Ficha da obra
+// ===========================================================================
+function fmtDim(o) { return `${o.altura_cm} × ${o.largura_cm} cm`; }
+function showCard(i) {
+  const o = artworks[i].data;
+  $('cNum').textContent = `Obra ${String(i + 1).padStart(2, '0')} de ${artworks.length}`;
+  $('cTitle').textContent = o.titulo;
+  $('cBy').textContent = G.artista;
+  $('cYear').textContent = o.ano || '—';
+  $('cTech').textContent = o.tecnica || '—';
+  $('cDim').textContent = fmtDim(o);
+  $('cConcept').textContent = o.conceito || '';
+  $('cPrice').textContent = o.status === 'vendida' ? '' : (o.preco || 'Sob consulta');
+  const sold = o.status === 'vendida';
+  $('cStatus').textContent = sold ? 'Vendida' : 'Disponível';
+  $('cStatus').classList.toggle('sold', sold);
+  $('btnBuy').disabled = sold;
+  $('btnBuy').textContent = sold ? 'Obra vendida' : 'Tenho interesse';
+  $('card').classList.add('on');
+}
+function hideCard() { $('card').classList.remove('on'); }
+$('cardClose').onclick = hideCard;
+$('btnZoom').onclick = () => openViewer(current);
+$('btnBuy').onclick = () => openBuy(current);
+
+// ===========================================================================
+//  Visualizador com zoom (imagem em alta)
+// ===========================================================================
+const viewer = $('viewer'), stage = viewer.querySelector('.stage'), vimg = viewer.querySelector('img');
+const V = { s: 1, x: 0, y: 0, fit: 1 };
+const vPointers = new Map(); let vPinch = null;
+
+function openViewer(i) {
+  if (i < 0) return;
+  const o = artworks[i].data;
+  $('vTitle').textContent = o.titulo;
+  vimg.onload = () => { fitViewer(); viewer.classList.add('on'); };
+  if (!o.recorte) { vimg.src = o.arquivo; return; }
+  // formato irregular: mostra a versão em alta já sem o fundo branco
+  const a = artworks[i];
+  if (a.cutoutURL) { vimg.src = a.cutoutURL; return; }
+  const hi = new Image();
+  hi.onload = () => cutoutTexture(hi).image.toBlob(b => { a.cutoutURL = URL.createObjectURL(b); vimg.src = a.cutoutURL; });
+  hi.src = o.arquivo;
+}
+function closeViewer() { viewer.classList.remove('on'); }
+function fitViewer() {
+  const W = innerWidth, H = innerHeight, iw = vimg.naturalWidth, ih = vimg.naturalHeight;
+  V.fit = Math.min((W - 40) / iw, (H - 120) / ih);
+  V.s = V.fit; V.x = (W - iw * V.s) / 2; V.y = (H - ih * V.s) / 2 + 10; applyV();
+}
+function applyV() { vimg.style.transform = `translate(${V.x}px,${V.y}px) scale(${V.s})`; }
+function zoomAt(f, cx, cy) {
+  const ns = THREE.MathUtils.clamp(V.s * f, V.fit * 0.8, Math.max(V.fit * 8, 3));
+  V.x = cx - (cx - V.x) * (ns / V.s); V.y = cy - (cy - V.y) * (ns / V.s); V.s = ns; applyV();
+}
+stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY); }, { passive: false });
+stage.addEventListener('dblclick', e => zoomAt(V.s > V.fit * 1.5 ? V.fit / V.s : 3, e.clientX, e.clientY));
+stage.addEventListener('pointerdown', e => {
+  stage.setPointerCapture(e.pointerId); vPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  stage.classList.add('drag');
+  if (vPointers.size === 2) { const [a, b] = [...vPointers.values()]; vPinch = Math.hypot(a.x - b.x, a.y - b.y); }
+});
+stage.addEventListener('pointermove', e => {
+  const p = vPointers.get(e.pointerId); if (!p) return;
+  if (vPointers.size === 2) {
+    p.x = e.clientX; p.y = e.clientY;
+    const [a, b] = [...vPointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+    zoomAt(d / vPinch, (a.x + b.x) / 2, (a.y + b.y) / 2); vPinch = d; return;
+  }
+  V.x += e.clientX - p.x; V.y += e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; applyV();
+});
+const vEnd = e => { vPointers.delete(e.pointerId); if (vPointers.size < 2) vPinch = null; if (!vPointers.size) stage.classList.remove('drag'); };
+stage.addEventListener('pointerup', vEnd); stage.addEventListener('pointercancel', vEnd);
+$('vIn').onclick = () => zoomAt(1.6, innerWidth / 2, innerHeight / 2);
+$('vOut').onclick = () => zoomAt(1 / 1.6, innerWidth / 2, innerHeight / 2);
+$('vFit').onclick = fitViewer;
+$('vClose').onclick = closeViewer;
+
+// ===========================================================================
+//  Pedido de compra (WhatsApp / e-mail, sem servidor)
+// ===========================================================================
+const onlyDigits = s => (s || '').replace(/\D/g, '');
+let buyVia = onlyDigits(G.whatsapp) ? 'whatsapp' : 'email';
+if (!onlyDigits(G.whatsapp)) $('bWhats').remove();
+if (!G.email) $('bMail').remove();
+if (!onlyDigits(G.whatsapp)) $('bMail')?.classList.add('primary');
+
+function openBuy(i) {
+  if (i < 0) return;
+  const o = artworks[i].data;
+  $('bLead').textContent = `${o.titulo} · ${fmtDim(o)} · ${o.preco || 'Sob consulta'}`;
+  $('bMsg').value = `Olá! Vi a obra "${o.titulo}" (${fmtDim(o)}) na galeria virtual e tenho interesse em comprá-la. Pode me passar mais informações?`;
+  $('buy').classList.add('on');
+  setTimeout(() => $('bName').focus(), 50);
+}
+$('buyForm').addEventListener('click', e => { const b = e.target.closest('[data-via]'); if (b) buyVia = b.dataset.via; });
+$('buyForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const o = artworks[current].data;
+  const text = `${$('bMsg').value}\n\nNome: ${$('bName').value}\nContato: ${$('bContact').value}\nObra: ${o.titulo} (${o.id})\n${location.href.split('#')[0]}#${o.id}`;
+  if (buyVia === 'whatsapp') window.open(`https://wa.me/${onlyDigits(G.whatsapp)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  else location.href = `mailto:${G.email}?subject=${encodeURIComponent('Interesse na obra ' + o.titulo)}&body=${encodeURIComponent(text)}`;
+  $('buy').classList.remove('on');
+  toast('Obrigado! Finalize o envio no aplicativo que abriu.');
+});
+
+// ===========================================================================
+//  Acervo (lista de obras)
+// ===========================================================================
+artworks.forEach((a, i) => {
+  const b = document.createElement('button'); b.className = 'item';
+  b.innerHTML = `<div class="ph"></div><div class="t"></div><div class="m"></div>`;
+  b.querySelector('.ph').style.backgroundImage = `url("${a.data.arquivo}")`;
+  b.querySelector('.t').textContent = a.data.titulo;
+  b.querySelector('.m').textContent = `${fmtDim(a.data)} · ${a.data.status === 'vendida' ? 'Vendida' : (a.data.preco || 'Sob consulta')}`;
+  b.onclick = () => { $('acervo').classList.remove('on'); goToArtwork(i); };
+  $('grid').appendChild(b);
+});
+$('btnAcervo').onclick = () => $('acervo').classList.add('on');
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => {
+  if (e.target === m || e.target.closest('[data-close]')) m.classList.remove('on');
+}));
+
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 3200); }
+
+// ===========================================================================
+//  Início
+// ===========================================================================
+await ready;
+$('enter').disabled = false; $('enter').textContent = 'Entrar na galeria';
+$('enter').onclick = () => {
+  $('start').classList.add('hidden'); active = true;
+  const id = decodeURIComponent(location.hash.slice(1));
+  const i = artworks.findIndex(a => a.data.id === id);
+  if (i >= 0) goToArtwork(i);
+};
+
+// ===========================================================================
 //  Loop
-// ---------------------------------------------------------------------------
+// ===========================================================================
 const clock = new THREE.Clock();
-const fwdV = new THREE.Vector3(), rightV = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
-const SPEED = 3.2;
+const fwd = new THREE.Vector3(), right = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+const SPEED = 3.0;
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+function tryMove(dx, dz) {
+  const p = camera.position;
+  if (!blocked(p.x + dx, p.z + dz)) { p.x += dx; p.z += dz; return true; }
+  if (!blocked(p.x + dx, p.z)) { p.x += dx; return true; }      // desliza na parede
+  if (!blocked(p.x, p.z + dz)) { p.z += dz; return true; }
+  return false;
+}
 
 function animate() {
-  // rAF congela em abas ocultas; cai para timer para não travar o render
-  if (document.hidden) setTimeout(animate, 33); else requestAnimationFrame(animate);
+  if (document.hidden) setTimeout(animate, 50); else requestAnimationFrame(animate);
   resizeToDisplay();
   const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (focus) {
-    focus.t = Math.min(1, focus.t + dt * 1.8);
-    const e = 1 - Math.pow(1 - focus.t, 3);
-    camera.position.lerp(focus.pos, e * 0.25 + (focus.t >= 1 ? 0.15 : 0));
-    yaw += (focus.yaw - yaw) * (e * 0.25);
-    pitch += (focus.pitch - pitch) * (e * 0.25);
+  if (fly) {
+    fly.t = Math.min(1, fly.t + dt / fly.dur);
+    const e = ease(fly.t);
+    camera.position.lerpVectors(fly.from, fly.to, e);
+    yaw = THREE.MathUtils.lerp(fly.y0, fly.y1, e);
+    pitch = THREE.MathUtils.lerp(fly.p0, fly.p1, e);
+    fov = THREE.MathUtils.lerp(fly.f0, 55, e);
+    if (fly.t >= 1) fly = null;
   } else if (active) {
-    // input teclado
     let f = 0, s = 0;
-    if (keys['KeyW'] || keys['ArrowUp']) f += 1;
-    if (keys['KeyS'] || keys['ArrowDown']) f -= 1;
-    if (keys['KeyD'] || keys['ArrowRight']) s += 1;
-    if (keys['KeyA'] || keys['ArrowLeft']) s -= 1;
-    if (isTouch) { s += move.x; f += move.y; }
-
+    if (keys.KeyW || keys.ArrowUp) f += 1;
+    if (keys.KeyS || keys.ArrowDown) f -= 1;
+    if (keys.KeyD || keys.ArrowRight) s += 1;
+    if (keys.KeyA || keys.ArrowLeft) s -= 1;
     if (f || s) {
-      camera.getWorldDirection(fwdV); fwdV.y = 0; fwdV.normalize();
-      rightV.crossVectors(fwdV, up).normalize();
-      const mv = new THREE.Vector3().addScaledVector(fwdV, f).addScaledVector(rightV, s);
-      if (mv.lengthSq() > 0) mv.normalize().multiplyScalar(SPEED * dt);
-      camera.position.add(mv);
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -HX + 0.8, HX - 0.8);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -HZ + 0.8, HZ - 0.8);
-      camera.position.y = EYE;
+      walkTo = null;
+      fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); right.crossVectors(fwd, UP);
+      const mv = fwd.multiplyScalar(f).addScaledVector(right, s).normalize().multiplyScalar(SPEED * dt);
+      tryMove(mv.x, mv.z);
+    } else if (walkTo) {
+      const d = walkTo.clone().sub(camera.position); d.y = 0;
+      const len = d.length();
+      if (len < 0.05) walkTo = null;
+      else {
+        const stepLen = Math.min(len, SPEED * dt * Math.min(1, len / 0.8 + 0.25));
+        d.multiplyScalar(stepLen / len);
+        if (!tryMove(d.x, d.z)) walkTo = null;
+        // vira suavemente na direção do movimento só se a pessoa não estiver olhando
+        const target = Math.atan2(-d.x, -d.z); let dy = target - yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+        if (Math.abs(dy) > 0.02 && len > 1.2 && !pointers.size) yaw += dy * Math.min(1, dt * 1.6);
+      }
     }
+    camera.position.y = EYE;
   }
 
+  // marcador
+  if (ringT > 0) ringT = Math.max(0, ringT - dt * 1.3);
+  ring.material.opacity = Math.max(ringT * 0.7, hoverRing && !isTouch ? 0.25 : 0);
+  ring.scale.setScalar(1 + (1 - ringT) * 0.4 * (ringT > 0 ? 1 : 0));
+
   camera.rotation.set(pitch, yaw, 0);
-  updateHover();
+  if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   renderer.render(scene, camera);
 }
 animate();
 
-addEventListener('resize', resizeToDisplay);
-
-// Debug hooks (usados para verificação automática; inofensivos)
+// Hooks de depuração (verificação automática)
 window.__gallery = {
-  enter() { startEl.classList.add('hidden'); active = true; if (isTouch) document.getElementById('touch').classList.add('on'); },
-  focus(i) { if (artworks[i]) focusArtwork(artworks[i]); },
-  step(f, s) { move.set(s || 0, f || 0); },
-  pose() { return { x: +camera.position.x.toFixed(2), z: +camera.position.z.toFixed(2), yaw: +yaw.toFixed(2), focusing: !!focus }; },
-  // renderiza offscreen (preserveDrawingBuffer) e amostra cores — para verificação headless
-  sample(points, w = 480, h = 270) {
-    const r = new THREE.WebGLRenderer({ preserveDrawingBuffer: true, antialias: true });
-    r.setSize(w, h, false); r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15; r.shadowMap.enabled = true;
-    const cam = camera.clone(); cam.aspect = w / h; cam.updateProjectionMatrix();
-    r.render(scene, cam);
-    const gl = r.getContext(), out = {};
-    for (const [name, ux, uy] of points) {
-      const px = new Uint8Array(4);
-      gl.readPixels(Math.floor(ux * w), Math.floor(uy * h), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      out[name] = [px[0], px[1], px[2]];
-    }
-    r.dispose(); r.forceContextLoss();
-    return out;
-  },
-  shot(w = 860, h = 500, q = 0.82) {
-    const r = new THREE.WebGLRenderer({ preserveDrawingBuffer: true, antialias: true });
-    r.setSize(w, h, false); r.outputColorSpace = THREE.SRGBColorSpace;
-    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.15;
-    r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
-    const cam = camera.clone(); cam.aspect = w / h; cam.updateProjectionMatrix();
-    r.render(scene, cam);
-    const url = r.domElement.toDataURL('image/jpeg', q);
-    r.dispose(); r.forceContextLoss();
-    return url;
-  },
+  enter() { $('enter').click(); },
+  go: goToArtwork,
+  pose() { const p = camera.position; return { x: +p.x.toFixed(2), z: +p.z.toFixed(2), yaw: +yaw.toFixed(2), pitch: +pitch.toFixed(2), fly: !!fly }; },
+  set(x, z, y, p) { cancelAuto(); camera.position.set(x, EYE, z); yaw = y; pitch = p || 0; },
+  click,
 };
 </script>
+</body>
+</html>
